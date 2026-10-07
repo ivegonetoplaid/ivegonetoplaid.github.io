@@ -305,7 +305,6 @@ class Recorded:
     first: dict[str, Any]
     walks: dict[str, Walks]
     pick: dict[str, Any]
-    films: Any
 
 
 def record(c: TestClient) -> Recorded:
@@ -323,7 +322,7 @@ def record(c: TestClient) -> Recorded:
     first = ok(c.post("/api/first", json={"viewer": viewer, "source": "held"}))
     walks = {tree: walk_door(c, viewer, tree) for tree in DOORS}
     template = ok(c.post("/api/pick", json={"tree": DOORS[0], "viewer": viewer, "source": "held"}))
-    return Recorded(boot, first, walks, template, None)
+    return Recorded(boot, first, walks, template)
 
 
 def choose_all(rec: Recorded, plan: dict[str, Any], can: Revealable) -> dict[str, list[int]]:
@@ -339,7 +338,7 @@ def choose_all(rec: Recorded, plan: dict[str, Any], can: Revealable) -> dict[str
     reveal: dict[str, list[int]] = {}
     for name, (tree, pool) in pools.items():
         more = choose(tree, pool, 3 - len(kept[name]), taken, can) if len(kept[name]) < 3 else []
-        reveal[name] = kept[name] + more
+        reveal[name] = sorted(kept[name] + more)  # film-id order: no ordering from TMDB's votes is published
         taken |= set(more)
     check_reveal(reveal, pools)
     return reveal
