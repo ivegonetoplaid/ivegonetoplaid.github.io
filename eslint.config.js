@@ -21,7 +21,7 @@ export default [
   { ignores: ["static/**", "!static/js/", "!static/js/api.js", "demo/**"] },
   js.configs.recommended,
   {
-    files: ["site/**/*.js", "static/js/api.js"],
+    files: ["site/**/*.js", "static/js/api.js", "tools/api.js"],
     languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: globals.browser },
     rules,
   },

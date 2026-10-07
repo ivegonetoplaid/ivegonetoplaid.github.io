@@ -13,7 +13,13 @@ site.
 
 - `./bootstrap.sh` once: the development tools and the git hook.
 - `./check.sh` before every commit: lint and the tests, in a headless browser.
-- `tools/copy_page.sh MATINEE_CHECKOUT [COMMIT]` copies Matinee's page in.
+- `tools/copy_page.sh MATINEE_CHECKOUT [COMMIT]` copies Matinee's page in, and records the commit
+  (`MATINEE_COMMIT`) and each file's checksum (`PAGE_FILES`). `tests/page-copy.test.mjs` checks the copy against
+  those checksums everywhere, and checks the checksums against the commit itself only where a Matinee checkout is
+  at hand (`MATINEE_CHECKOUT`, or a `matinee` folder beside this one); elsewhere that half is skipped.
+- `tools/build_demo.py` rebuilds the canned replies and the pictures from a Matinee checkout, a film table and the
+  film folders; its docstring says how. `tools/demo-films.json` lists the films each branch reveals, and `exclude`
+  names any film the site must not show: removing a film is one entry there and a rebuild.
 
 ## Licence and the pictures
 

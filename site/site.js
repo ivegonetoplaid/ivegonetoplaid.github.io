@@ -1,6 +1,7 @@
 // The site's page: the deck over the curtain, Matinee's marquee on the first slide, the lines typing as their
 // slides arrive, and About over everything.
 import { deck } from "./deck.js";
+import { mountDemo } from "./demo.js";
 
 const CHARS_PER_TICK = 2; // Matinee's own pace: two characters every 24 ms
 const TICK_MS = 24;
@@ -99,3 +100,15 @@ deck({
   },
 });
 marquee().catch((err) => console.warn("The marquee drawing could not be loaded.", err));
+
+// The demo's two screens: a phone always, and a desktop monitor where the screen is wide enough to show one.
+const wide = matchMedia("(min-width: 601px)");
+const STATUS_BAR = 58; // the drawn phone's status bar, in the phone's own pixels
+mountDemo(document.getElementById("phone-glass"), { width: 390, height: 844 - STATUS_BAR, top: STATUS_BAR, title: "Matinee on a phone" });
+// A window that widens past a phone's width gets its monitor's demo then, once.
+function mountDesk() {
+  wide.removeEventListener("change", mountDesk);
+  mountDemo(document.getElementById("desk-glass"), { width: 1280, height: 800, title: "Matinee on a desktop" });
+}
+if (wide.matches) mountDesk();
+else wide.addEventListener("change", mountDesk);
