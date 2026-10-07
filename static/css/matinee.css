@@ -1,0 +1,3025 @@
+/* Matinee. One dark theme. The numbers below are the design canvas's, set once here. */
+
+@font-face {
+  font-family: "Big Shoulders Display";
+  src: url("/static/fonts/big-shoulders-display.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DM Sans";
+  src: url("/static/fonts/dm-sans.woff2") format("woff2");
+  font-weight: 100 1000;
+  font-display: swap;
+}
+
+:root {
+  /* `only` keeps a browser's forced dark mode (Samsung Internet's, Chrome's) from repainting a page that is already dark. */
+  color-scheme: only dark;
+  --base: #07080d;
+  --text: #efe9dc;
+  --dim: color-mix(in srgb, var(--text) 66%, transparent);
+  --gold: #f2b33d;
+  --velvet: #e0566b;
+  --petrol: #3b7c8c;
+  --strip: #f4efe2;
+  --strip-ink: #121212;
+  --strip-edge: #2a2622;
+  --strip-hi: #fffdf6;
+  --strip-lo: #e4d9c2;
+  --edge-hi: #5a5046;
+  --edge-lo: #120f0c;
+  --action: #161926;
+  --gold-words: #f6ca77;
+  --rose-words: #e98997;
+  --petrol-words: #5fa3b3;
+  --cream-edge: #a39e93;
+  --shade: color-mix(in srgb, var(--base) 92%, transparent);
+  --black: #000;
+  --white: #fff;
+  --glow: #ffecbe;
+  --warm: #ffd68c;
+  --mark: #151827;
+  --menu: #12141f;
+  --panel: #0e101a;
+  --about-panel: #090a10;
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --body: "DM Sans", system-ui, sans-serif;
+  --pad: 48px;
+  --band-fade: 96px;
+}
+
+@media (max-width: 600px) {
+  :root {
+    --band-fade: 48px;
+    --pad: 20px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--base);
+  color: var(--text);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  overflow: hidden;
+}
+
+a {
+  color: var(--gold);
+}
+
+a:hover {
+  color: var(--gold-words);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- the poster wall ---------- */
+
+.wall {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--base);
+  pointer-events: none;
+  --tile: 0.35;
+}
+
+/* Every poster rides this one layer, which the camera moves; each poster is its own element. */
+.wall-tiles {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  transition: opacity 400ms ease-out;
+}
+
+/* A wall laid fresh, unseen until its pictures can be drawn (wall.js fadeIn). */
+.wall-tiles.waiting {
+  opacity: 0;
+  transition: none;
+}
+
+.wall-tiles[hidden],
+.tile[hidden] {
+  display: none;
+}
+
+/* A poster whose picture has not loaded is this dark cell. */
+.tile {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  object-fit: cover;
+  border-radius: 3px;
+  background: #161826;
+  opacity: var(--tile);
+  transform-origin: 0 0;
+  user-select: none;
+  /* The wall moves every poster itself, frame by frame; no style change on one is ever eased, so
+     the reduced-motion rule's short transitions never paint a poster's old size or strength. */
+  transition-property: none !important;
+}
+
+/* ---------- the stage the questions sit on ---------- */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  top: var(--warning-h, 0px);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: var(--pad);
+  overflow-y: auto;
+  /* A control given the focus scrolls clear of the pinned foot's band, never under it. */
+  scroll-padding-bottom: calc(var(--band-fade) + 72px);
+}
+
+/* The bands: the page base at 92 per cent behind the top bar and behind the foot's bar, feathering to nothing
+   into the wall over --band-fade (96 px, 48 px on a phone). The top band lies behind everything on the screen. */
+.topbar {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--pad)) calc(-1 * var(--pad)) calc(-1 * var(--band-fade));
+  z-index: -1;
+  background: linear-gradient(var(--shade) calc(100% - var(--band-fade)), transparent);
+  pointer-events: none;
+}
+
+/* The theatre's mark at the top left: the corner mark, the marquee's crown over a small lit sign. */
+.wordmark {
+  display: block;
+  line-height: 0;
+}
+
+.corner-mark {
+  display: block;
+  width: auto;
+  height: 40px;
+}
+
+/* Landed after the name's flight, the mark fades in beneath the name before the name gives way; flight.js's
+   HANDOVER_MS keeps the name for as long. */
+.wordmark.arriving {
+  animation: mark-in 0.3s ease both;
+}
+
+@keyframes mark-in {
+  from {
+    opacity: 0;
+  }
+}
+
+a.wordmark:focus-visible {
+  outline: 2px solid var(--gold-words);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+@media (hover: hover) {
+  a.wordmark:hover {
+    filter: brightness(1.12);
+  }
+}
+
+.count {
+  font-size: 16px;
+  color: var(--text);
+}
+
+/* Matinee's speech and the viewer's answers keep apart. The speech hangs from the
+   top with three lines reserved, so it types downward and the answers start at the
+   same height on every question; on a phone the answers sit at the foot instead,
+   under the thumb. Nothing re-centres as a line types or the answers appear. */
+.talk {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 26px;
+  width: min(680px, 100%);
+  align-self: center;
+}
+
+.talk > .line {
+  font-size: clamp(32px, min(4.4vw, 7vh), 64px);
+  min-height: calc(3 * 0.98em);
+}
+
+@media (max-width: 600px) {
+  .talk > .line {
+    min-height: 0;
+  }
+
+  .talk > .answers {
+    margin-top: auto;
+  }
+}
+
+/* A phone's way back, "Back" and "Start over", stands where a desktop shows the trail. */
+.way-back,
+.aside .choices > .back {
+  display: none;
+}
+
+/* On a phone the trail and the TMDB credit line leave every screen: "Back" and "Start over" take the trail's
+   place, and the About page carries TMDB's logo and notice. DoesTheDogDie's credit stays where its data shows. */
+@media (max-width: 600px) {
+  .bottombar > .trail,
+  .tmdb-credit {
+    display: none;
+  }
+
+  .way-back {
+    display: flex;
+    flex-basis: 100%;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .aside .choices > .back {
+    display: inline-flex;
+  }
+
+  /* After three films trip the list, "Start over" stands beside "Roll again" and the longer action takes a
+     row of its own, so the three fit the pick's foot. */
+  .aside .choices > .show-picked {
+    order: 1;
+  }
+}
+
+/* The way here, bottom centre in the pinned bar: small, gold, one crumb per step. */
+.trail ol {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  color: var(--gold);
+}
+
+/* A row of its own across the pinned bottom bar, above the credits. */
+.bottombar > .trail {
+  flex-basis: 100%;
+  min-width: 0;
+}
+
+.trail li {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* The separator stays with the crumb before it, so a wrapped row starts with a crumb. */
+.trail li:not(:last-child)::after {
+  content: "›";
+  margin: 0 10px;
+}
+
+/* "Start" and the door keep their words; the source answer and the answers shorten first. */
+.trail li.keep {
+  flex-shrink: 0;
+}
+
+.crumb {
+  max-width: 26ch;
+  min-height: 32px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--gold) 40%, transparent);
+  cursor: pointer;
+}
+
+/* The crumb for the screen showing now: the same words, not a link. */
+.crumb.here {
+  display: inline-block;
+  line-height: 32px;
+  text-decoration: none;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  button.crumb:hover {
+    color: var(--gold-words);
+    text-decoration-color: currentColor;
+  }
+}
+
+.path {
+  margin: 0;
+  padding-left: 1.4em;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.line {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(32px, min(5.2vw, 8.5vh), 76px);
+  line-height: 0.98;
+  min-height: 2em;
+  margin: 0;
+}
+
+.line .ack {
+  display: block;
+  color: var(--gold);
+}
+
+.line .ask {
+  display: block;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* A scrim: a feathered dark patch behind a piece of wall text, the page base at 92 per cent across the
+   text's whole block (its corners included), fading to nothing about 40 px beyond it, with no edge. Its
+   holder makes no stacking context of its own, so every scrim paints behind all of the screen's text and
+   controls, never over a neighbour's words. A box that scrolls clips what
+   it holds, so a box holding wall text near its edge keeps 40 px of room there. */
+.line:not(.locked-line, .viewer-line) > :is(.ack, .ask):not(:empty),
+.countdown,
+.note:not(:empty, .viewer-panel .note, .correct-panel .note),
+.footnote,
+.count,
+.seat-label,
+.feature-text,
+.correct-panel {
+  position: relative;
+}
+
+.line:not(.locked-line, .viewer-line) > :is(.ack, .ask):not(:empty)::before,
+.countdown::before,
+.note:not(:empty, .viewer-panel .note, .correct-panel .note)::before,
+.footnote::before,
+.count::before,
+.seat-label::before,
+.feature-text::before,
+.correct-panel::before {
+  content: "";
+  position: absolute;
+  inset: -16px;
+  z-index: -1;
+  background: var(--shade);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.answers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fade 0.5s ease both;
+}
+
+.answers[hidden] {
+  display: none;
+}
+
+/* A letterbox chooses something: a backlit milk-glass panel in a dark bezel, a channel rail above and below
+   every row of letters, as on the marquee's letter board. One size on every screen; it grows a row per
+   wrapped line. The bezel is a gradient border, the glass and the rails are background layers, and the rails
+   are sized to the line height, so any number of lines sits between rails at any width. */
+.letterbox {
+  --lb-line: 32px;
+  --lb-edge: 3px;
+  --lb-pad-x: 18px;
+  --lb-lo: var(--strip-lo);
+  --lb-glow: 0 0 12px color-mix(in srgb, var(--glow) 30%, transparent);
+  display: flex;
+  align-items: flex-start;
+  min-height: 44px;
+  margin: 0;
+  padding: 5px var(--lb-pad-x);
+  border: var(--lb-edge) solid transparent;
+  border-radius: 4px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24px;
+  line-height: var(--lb-line);
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--strip-ink);
+  cursor: pointer;
+  background:
+    /* the rails: a groove's shadow over its lit lip, one per line, laid from the first line's top */
+    linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--black) 26%, transparent) 0 1px,
+        color-mix(in srgb, var(--white) 85%, transparent) 1px 2px,
+        transparent 2px
+      )
+      0 -1px / 100% var(--lb-line) repeat content-box padding-box,
+    /* the glass darkens a little toward its ends */
+    linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--edge-lo) 9%, transparent),
+        transparent 28px calc(100% - 28px),
+        color-mix(in srgb, var(--edge-lo) 9%, transparent)
+      )
+      padding-box,
+    /* the backlight, brightest through the middle */
+    linear-gradient(180deg, var(--lb-lo), var(--strip-hi) 30% 65%, var(--lb-lo)) padding-box,
+    /* the bezel */
+    linear-gradient(180deg, var(--edge-hi), var(--strip-edge) 40%, var(--edge-lo)) border-box;
+  box-shadow:
+    var(--lb-glow),
+    inset 0 3px 3px -1px color-mix(in srgb, var(--black) 22%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--white) 70%, transparent);
+  transition:
+    box-shadow 0.2s ease,
+    --lb-lo 0.2s ease;
+}
+
+/* The glass's lower shade is registered so hover can ease it toward the brighter face. */
+@property --lb-lo {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@media (hover: hover) {
+  .letterbox:hover {
+    --lb-lo: var(--strip);
+    --lb-glow: 0 0 18px color-mix(in srgb, var(--glow) 55%, transparent);
+  }
+}
+
+.letterbox:active {
+  transform: translateY(1px);
+}
+
+/* A long list of answers (the first question) wraps as a row. */
+.answers.many {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .letterbox {
+    --lb-line: 26px;
+    --lb-edge: 2px;
+    --lb-pad-x: 14px;
+    --lb-glow: 0 0 8px color-mix(in srgb, var(--glow) 26%, transparent);
+    font-size: 19px;
+    letter-spacing: 0.04em;
+    padding-block: 7px;
+  }
+}
+
+/* The gore pails: four pictures standing in a row, each answer's words beneath its pail. */
+.answers.pails {
+  flex-direction: row;
+  gap: 28px;
+  width: min(1180px, calc(100vw - 2 * var(--pad)));
+  align-self: center;
+}
+
+.talk:has(.answers.pails) {
+  width: min(1180px, 100%);
+}
+
+/* A problem screen's "Try again" stands at the left, under the message. */
+.talk > .action {
+  align-self: flex-start;
+}
+
+/* The setup note: what Matinee sees wrong with its setup, one paragraph each, beneath its heading. */
+.talk > .setup-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 680px;
+  margin: 0 0 28px;
+}
+
+.setup-lines > .note {
+  font-size: 19px;
+}
+
+.talk > .setup-lines[hidden],
+.talk.setup > .action[hidden] {
+  display: none;
+}
+
+/* The note's heading is one line, so it reserves none of the three a question keeps. */
+.talk.setup > .line {
+  min-height: 0;
+}
+
+/* A question's footnote: one small line beneath the answers, above "Just pick one!". */
+.talk > .footnote {
+  margin: -14px 0 0;
+  font-size: 16px;
+  color: var(--text);
+}
+
+.talk > .footnote[hidden] {
+  display: none;
+}
+
+/* "Just pick one!" stands last, beneath the answers, with the count of films left beside it: under the
+   strips on the left, under the pails in the middle. */
+.talk > .just-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  align-self: flex-start;
+}
+
+/* Beside the button even on a narrow phone: the button stays whole, and the count wraps its own words
+   rather than drop below. */
+.just-pick-row .just-pick {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.just-pick-row .count {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+@media (max-width: 600px) {
+  .talk > .just-pick-row {
+    gap: 12px;
+  }
+}
+
+.talk > .just-pick-row[hidden] {
+  display: none;
+}
+
+.talk:has(.answers.pails) > .just-pick-row {
+  align-self: center;
+}
+
+.pail {
+  flex: 1 1 0;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.pail img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.pail-say {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--strip-ink);
+  background-color: var(--strip);
+  border: 3px solid var(--strip-edge);
+  border-radius: 4px;
+  padding: 6px 12px;
+  text-align: center;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 28%, transparent), inset 0 0 14px color-mix(in srgb, var(--white) 80%, transparent);
+}
+
+@media (hover: hover) {
+  .pail:hover {
+    transform: translateY(-6px);
+  }
+}
+
+@media (max-width: 600px) {
+  .answers.pails {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 14px;
+    width: 100%;
+  }
+
+  .pail-say {
+    font-size: 15px;
+    letter-spacing: 0.03em;
+    border-width: 2px;
+    padding: 5px 8px;
+  }
+}
+
+/* ---------- the pick ---------- */
+
+/* Above the wall. The row fills the screen and everything hangs from its top, so
+   nothing re-centres as the film arrives, and opening the correction panel grows
+   the page downward. */
+.showing {
+  position: relative;
+  z-index: 1;
+  flex-grow: 1;
+  display: grid;
+  /* A third of the row, widened toward 470 px (at most 38 per cent) so the pick's three actions stand in one row. */
+  grid-template-columns: minmax(0, clamp(33.333%, 470px, 38%)) minmax(0, 1fr);
+  gap: 48px;
+  align-content: stretch;
+  align-items: start;
+}
+
+/* The left column: the aside at the top, the poster resting in whatever height is left beneath it. */
+.pick-left {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.poster-slot {
+  flex: 1 1 0;
+  display: flex;
+  align-items: flex-end;
+}
+
+.slot-poster {
+  display: block;
+  object-fit: cover;
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--warm) 35%, transparent), 0 24px 60px color-mix(in srgb, var(--black) 60%, transparent);
+}
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 470px;
+}
+
+.aside > .action {
+  align-self: flex-start;
+}
+
+.swap-note {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* The pick's line: at most 40 px on a desktop, so every approved line fits in three lines there; four
+   lines are reserved, so `Not that one` and the links below it stay in place from pick to pick. */
+.pick-line {
+  font-size: clamp(28px, min(4vw, 6vh), 40px);
+  min-height: calc(4 * 0.98em);
+}
+
+/* Matinee's words fade out as a pick begins and while the wall hunts. */
+.pick-line,
+.talk {
+  transition: opacity 0.35s ease;
+}
+
+.pick-line.hushed,
+.talk.hushed {
+  opacity: 0;
+}
+
+/* A reply that self-destructs (fuse.js): a number counts down in place, each one fading in and out
+   over the last; then the words burn away from the left, glowing as they go, and leave a scorch. */
+.pick-line {
+  position: relative;
+}
+
+.countdown {
+  display: block;
+  margin-top: 0.2em;
+  font-size: 2.6em;
+  line-height: 1;
+  color: var(--gold);
+  opacity: 0;
+}
+
+.countdown.tick {
+  animation: tick 1s ease-in-out both;
+}
+
+@keyframes tick {
+  0% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@property --burn {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+.pick-line.burning .ack,
+.pick-line.burnt .ack {
+  mask-image: linear-gradient(100deg, transparent calc(var(--burn) - 14%), #000 var(--burn));
+}
+
+.pick-line.burning .ack {
+  animation: burn 1.4s ease-in forwards;
+}
+
+.pick-line.burnt .ack {
+  --burn: 115%;
+}
+
+@keyframes burn {
+  0% {
+    --burn: 0%;
+  }
+  10% {
+    color: #ffd38a;
+    text-shadow: 0 0 10px rgba(255, 140, 40, 0.9);
+  }
+  100% {
+    --burn: 115%;
+    color: #ff6a1a;
+    text-shadow: 0 0 18px rgba(255, 80, 20, 0.85);
+  }
+}
+
+.scorch {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 45%;
+  background:
+    radial-gradient(38% 72% at 28% 58%, rgba(2, 1, 1, 0.95), transparent 72%),
+    radial-gradient(30% 58% at 66% 40%, rgba(4, 2, 1, 0.9), transparent 70%),
+    radial-gradient(closest-side, rgba(14, 8, 5, 0.85), rgba(110, 52, 16, 0.35) 80%, transparent);
+  filter: blur(4px);
+  opacity: 0;
+}
+
+.pick-line.burning .scorch {
+  animation: scorch 1.4s ease-in forwards;
+}
+
+.pick-line.burnt .scorch {
+  opacity: 0.95;
+}
+
+@keyframes scorch {
+  to {
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall-tiles {
+    transition: none;
+  }
+
+  .countdown.tick {
+    animation: none;
+    opacity: 1;
+  }
+
+  .pick-line.burning .ack {
+    animation: none;
+    --burn: 115%;
+  }
+
+  .pick-line.burning .scorch {
+    animation: none;
+    opacity: 0.95;
+  }
+}
+
+.choices {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.note {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.feature {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.backdrop {
+  width: 100%;
+  height: min(500px, 55vh);
+  object-fit: cover;
+  display: block;
+  border-radius: 8px;
+  mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+}
+
+.feature-text {
+  margin-top: -70px;
+  padding: 0 32px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fade 0.9s ease 0.5s both;
+}
+
+.feature-text > .action {
+  align-self: flex-start;
+}
+
+.feature > .feature-text:first-child {
+  margin-top: 0;
+}
+
+.film-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.film-year {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.synopsis {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.55;
+  max-width: 760px;
+  color: var(--text);
+}
+
+.correct {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.correct-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.correct-panel[hidden] {
+  display: none;
+}
+
+/* A saved note's two lines: the first in gold, the second in cream. */
+.correct-panel .note .ack {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.correct-panel .note .ask {
+  color: var(--text);
+}
+
+.tree-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.tree-choice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font-size: 16px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tree-choice input {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid var(--dim);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--action) 95%, transparent);
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+}
+
+.tree-choice input:checked {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.tree-choice input:checked::after {
+  content: "✓";
+  color: var(--strip-ink);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.what-wrong {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.what-wrong legend {
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.tree-choice input[type="radio"] {
+  border-radius: 50%;
+}
+
+.belongs[hidden] {
+  display: none;
+}
+
+.correct-panel textarea {
+  width: min(420px, 100%);
+  resize: vertical;
+}
+
+.correct-panel textarea,
+.correct-panel input[type="text"] {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--action) 95%, transparent);
+  border: 1px solid color-mix(in srgb, var(--white) 22%, transparent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-height: 44px;
+  width: min(320px, 100%);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* On a phone Matinee's words keep the foot of the pick: the line, two rows of buttons and the correction
+   link, then DoesTheDogDie's credit line where it has a key; its top never moves from the first word of a
+   pick to the last. Above it the showing scrolls on its own and ends at the foot, so
+   nothing passes behind the words: the poster fills it first, and the details follow beneath. */
+@media (max-width: 600px) {
+  .stage:has(> .showing) {
+    --pick-talk: 316px; /* the line's four lines, two rows of actions and the correction, without scrolling */
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) var(--pick-talk) auto;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  /* Runs to the screen's sides, and fades at its top and foot, so the poster's glow is never cut square. */
+  .showing {
+    display: block;
+    min-height: 0;
+    margin: 0 calc(var(--pad) * -1);
+    padding: 0 var(--pad);
+    overflow-y: auto;
+    scrollbar-width: none;
+    mask-image: linear-gradient(transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  }
+
+  .pick-left {
+    display: contents;
+  }
+
+  .poster-slot {
+    height: calc(100% - 56px);
+    margin: 28px 0;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Clear of the showing's fades at both ends, so the title and the synopsis's last line read in full. */
+  .feature {
+    padding: 28px 0 52px;
+  }
+
+  .backdrop {
+    display: none;
+  }
+
+  .feature-text {
+    padding: 0;
+    margin-top: 0;
+  }
+
+  .film-title {
+    font-size: 34px;
+  }
+
+  .synopsis {
+    font-size: 16px;
+  }
+
+  /* The foot scrolls on its own: it reaches the screen's sides, and fades its top and its foot over
+     20 px, so a scrim at either end fades with its text rather than being cut. */
+  .aside {
+    max-width: none;
+    min-height: 0;
+    margin: 0 calc(-1 * var(--pad));
+    padding: 20px var(--pad);
+    overflow-y: auto;
+    mask-image: linear-gradient(transparent, #000 20px, #000 calc(100% - 20px), transparent);
+    gap: 8px;
+  }
+
+  /* Nothing in the foot shrinks under its own height: a line longer than its four reserved lines scrolls
+     with the rest rather than lie over the actions. */
+  .aside > * {
+    flex-shrink: 0;
+  }
+
+  /* Nothing scrolls under the phone pick's foot, so its band lies behind Matinee's words, rising from the bar. */
+  .stage:has(> .showing) > .bottombar {
+    position: relative;
+    z-index: auto;
+    bottom: auto;
+    padding-top: 0;
+    row-gap: 2px;
+  }
+
+  .stage:has(> .showing) > .bottombar::before {
+    top: calc(-1 * var(--band-fade));
+  }
+
+  /* DoesTheDogDie's credit takes a line of its own, kept for it whether or not it shows, so the foot never
+     changes height when it appears. */
+  .stage:has(> .showing) .dtdd-credit {
+    display: block;
+  }
+
+  .stage:has(> .showing) .dtdd-credit[hidden] {
+    visibility: hidden;
+  }
+
+  .stage:has(> .showing) .dtdd-credit::before {
+    content: none;
+  }
+}
+
+/* Pinned to the foot of the screen, its band's fade part of it, so nothing rests under the fade and what
+   scrolls beneath it fades under the band instead of showing through. */
+.bottombar {
+  position: sticky;
+  z-index: 2;
+  bottom: calc(-1 * var(--pad));
+  margin: 0 calc(-1 * var(--pad)) calc(-1 * var(--pad));
+  padding: var(--band-fade) var(--pad) var(--pad);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* An action does something: a dark-enamel face, its thin outline and words in one accent, `gold`, `rose`,
+   `petrol` or `cream`, a highlight along its top edge, a slight shadow along its foot and a very light grain.
+   The body is never filled with the accent. Its face stands 40 px tall; an unseen margin keeps the tap target
+   at 44 px. */
+.action {
+  --edge: var(--gold);
+  --words: var(--gold-words);
+  --lit: 0 0 0 transparent;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin-block: 2px;
+  padding: 8px 16px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: url("/static/grain.svg"), var(--action);
+  box-shadow:
+    var(--lit),
+    inset 0 1px 0 color-mix(in srgb, var(--white) 14%, transparent),
+    inset 0 -2px 3px color-mix(in srgb, var(--black) 45%, transparent);
+  color: var(--words);
+  font: 600 18px/1.2 var(--body);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+/* The tap target reaches 2 px beyond the face above and below. */
+.action::before {
+  content: "";
+  position: absolute;
+  inset: -3px -1px;
+}
+
+.action.rose {
+  --edge: var(--velvet);
+  --words: var(--rose-words);
+}
+
+.action.petrol {
+  --edge: var(--petrol);
+  --words: var(--petrol-words);
+}
+
+.action.cream {
+  --edge: var(--cream-edge);
+  --words: var(--text);
+}
+
+/* An action that is a link keeps its accent's words on hover, over the page's link colours. */
+.action:hover {
+  color: var(--words);
+}
+
+/* Hovered, the face looks faintly lit from within; pressed, it sinks. */
+@media (hover: hover) {
+  .action:hover:not(:disabled) {
+    --lit: inset 0 0 16px color-mix(in srgb, var(--words) 22%, transparent);
+    border-color: var(--words);
+  }
+}
+
+.action:active:not(:disabled) {
+  transform: translateY(1.5px);
+  box-shadow:
+    var(--lit),
+    inset 0 2px 4px color-mix(in srgb, var(--black) 50%, transparent);
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--words);
+  outline-offset: 2px;
+}
+
+.action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .action {
+    font-size: 16px;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Going in and About change at once: their short transitions would paint one frame of the door as it was. */
+  .marquee,
+  .sign-name,
+  .door-wall,
+  .door-foot > * {
+    transition-property: none !important;
+  }
+}
+
+/* ---------- the front door ---------- */
+
+/* The door is a column: the marquee at the top centre, then the wall below it where
+   Matinee's words are typed, each on its scrim, then the credit line. */
+.stage.at-door {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* The marquee: the drawing (static/marquee/), free-standing over the poster wall with no glow behind it. A
+   soft dark fade behind it, across the top of the screen, lets the sign read against the posters; it belongs
+   to the door and leaves with the marquee. */
+.marquee {
+  --shade-h: 420px;
+  position: relative;
+  isolation: isolate;
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding-top: 26px;
+  transform-origin: 50% 0;
+  transition:
+    opacity 0.55s ease,
+    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Going in, or opening About from the door: the marquee lifts and fades while its name flies to the
+   wordmark's place, and the door's words fade out. The name's own copy does the flying (flight.js). */
+.marquee.lifted {
+  opacity: 0;
+  transform: translateY(-110px) scale(0.93);
+  pointer-events: none;
+}
+
+.mq-name:has(> .away),
+.sign-name.away {
+  visibility: hidden;
+}
+
+/* The bar's band, behind its words; its own pseudo-element, so About can keep it showing beneath its panel. */
+.bottombar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, var(--shade) calc(100% - var(--band-fade)), transparent);
+  pointer-events: none;
+}
+
+/* Going in, the door's words and its credit line fade; the foot's band stays. */
+.door-wall,
+.door-foot > * {
+  transition: opacity 0.3s ease;
+}
+
+.stage.leaving .door-wall,
+.stage.leaving .door-foot > * {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flying-name {
+  position: fixed;
+  z-index: 6;
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(180deg, #fff0c4, #f2b33d 30%, #d99c34);
+  background-clip: text;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  /* Only the flight moves it; the reduced-motion rule's short transitions would paint its old place. */
+  transition-property: none !important;
+}
+
+.marquee::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--shade-h);
+  background: linear-gradient(180deg, rgba(7, 8, 13, 0.55), rgba(7, 8, 13, 0));
+  pointer-events: none;
+}
+
+/* A window too short for the full marquee scales it down, so the door's words and
+   the picker fit without the page scrolling. */
+@media (max-height: 820px) and (min-width: 601px) {
+  .marquee {
+    zoom: 0.8;
+  }
+}
+
+@media (max-height: 700px) and (min-width: 601px) {
+  .marquee {
+    zoom: 0.45;
+  }
+}
+
+/* The drawings and the phone's lit strip share one place at the marquee's top. */
+.marquee > * {
+  grid-area: 1 / 1;
+}
+
+/* The drawings: the wide one on a desktop, the narrow one on a phone. Each scales as one piece. On a phone the
+   picker shrinks the drawing toward its top while its room folds away, and the lit strip fades in in its
+   place. */
+.mq-drawings {
+  display: grid;
+  grid-template-rows: 1fr;
+  justify-items: center;
+  width: 100%;
+  transition: grid-template-rows 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.mq-frame {
+  min-height: 0;
+  transform-origin: 50% 0;
+  transition:
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 0.4s ease;
+}
+
+.mq-frame-wide {
+  width: min(924px, calc(100vw - 16px));
+}
+
+.mq-frame-narrow {
+  display: none;
+  width: min(374px, calc(100vw - 16px));
+}
+
+.mq {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* The drawing's live words: its name and its letter board. */
+.mq text {
+  font-family: var(--display);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mq-wide .mq-name text {
+  font-size: 104px;
+  letter-spacing: 0.12em;
+}
+
+.mq-narrow .mq-name text {
+  font-size: 58px;
+  letter-spacing: 0.12em;
+}
+
+.mq-board {
+  fill: var(--strip-ink);
+}
+
+.mq-wide .mq-board-small {
+  font-size: 17px;
+  letter-spacing: 0.26em;
+}
+
+.mq-wide .mq-board-big {
+  font-size: 32px;
+  letter-spacing: 0.04em;
+}
+
+.mq-narrow .mq-board-small {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+}
+
+.mq-narrow .mq-board-big {
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+/* Each bulb twinkles on its own beat; the chase darkens it twice a lap, half a lap apart, so two dark bulbs
+   travel clockwise opposite each other, one lap every 12 s. Every bulb's delays are written on it. */
+.mq-lit,
+.strip-bulb {
+  animation: mq-chase 12s linear infinite;
+}
+
+.mq-twinkle {
+  animation: mq-twinkle 2s ease-in-out infinite;
+}
+
+@keyframes mq-chase {
+  0%,
+  50% {
+    opacity: 0.06;
+  }
+
+  1.6%,
+  51.6%,
+  49.99%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes mq-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.78;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mq-lit,
+  .mq-twinkle,
+  .strip-bulb {
+    animation: none;
+  }
+}
+
+/* The phone's lit strip: a dark band, a row of bulbs along each long side, the letter board between. */
+.mq-strip {
+  display: none;
+  flex-direction: column;
+  gap: 3px;
+  width: min(374px, calc(100vw - 16px));
+  box-sizing: border-box;
+  padding: 3px 7px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #2e2319, #100c09);
+  box-shadow: inset 0 0 0 1px rgba(242, 179, 61, 0.6);
+}
+
+.strip-bulbs {
+  display: flex;
+  justify-content: space-between;
+}
+
+.strip-bulb {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #fffbea 0, #ffd27a 42%, #c98a2a 85%);
+}
+
+.strip-board {
+  align-self: center;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 12px;
+  border-radius: 2px;
+  background: var(--strip);
+  color: var(--strip-ink);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 19px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.strip-small {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+}
+
+/* A drawing that could not be loaded leaves the marquee's name as plain text. */
+.marquee.plain .sign-name {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 104px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+/* Film data past TMDB's six months: a loud strip across the top of every screen, above everything. */
+.warning-strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 8px var(--pad);
+  background: var(--velvet);
+  color: var(--strip-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.credits {
+  margin: 0;
+  font-size: 13px;
+  color: var(--dim);
+  text-align: center;
+}
+
+.credits a {
+  color: color-mix(in srgb, var(--gold) 75%, transparent);
+}
+
+/* DoesTheDogDie's credit joins the line on a screen that shows its data. */
+.dtdd-credit::before {
+  content: " · ";
+}
+
+/* TMDB's logo sits in the credit line at text height, well below Matinee's own mark. */
+.tmdb-logo {
+  height: 0.7em;
+  width: auto;
+  vertical-align: 0;
+}
+
+.bottombar .credits {
+  max-width: 560px;
+  text-align: right;
+}
+
+/* "About" in the credit line: a button that reads as one of the line's links. */
+.inline-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: color-mix(in srgb, var(--gold) 75%, transparent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.inline-link:hover {
+  color: var(--gold-words);
+}
+
+/* ---------- the About page ---------- */
+
+/* The screen underneath keeps its layout and its state while About covers it; it is only not drawn. */
+.stage.behind-about {
+  visibility: hidden;
+}
+
+/* The bands stay beneath About's panel. Opened from the door, whose top band (the marquee's fade) leaves with
+   the marquee, About gets the theatre's top band: its top bar's height (a 48 px bar) and fade. */
+.stage.behind-about :is(.topbar, .bottombar, .door-foot)::before {
+  visibility: visible;
+}
+
+.stage.at-door.behind-about::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: calc(var(--pad) + 48px + var(--band-fade));
+  background: linear-gradient(var(--shade) calc(100% - var(--band-fade)), transparent);
+  visibility: visible;
+  pointer-events: none;
+}
+
+/* Over the wall and the hidden screen; it scrolls when the panel is taller than the screen. */
+.about {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, var(--gold) 45%, transparent) transparent;
+}
+
+/* Opened from the door, the panel fades in once the name is nearly home, and the wordmark shows once it
+   has landed. */
+.about.from-door .about-panel {
+  animation-delay: 0.8s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about.from-door .about-panel {
+    animation-delay: 0s;
+  }
+}
+
+.about.flying .about-wordmark {
+  visibility: hidden;
+}
+
+/* Where the theatre's wordmark stands, so opening About from inside moves nothing. It stays put while
+   the panel scrolls only where the panel clears it; on a narrower screen it scrolls away with the page
+   rather than sit over the text. */
+.about-wordmark {
+  position: absolute;
+  top: var(--pad);
+  left: var(--pad);
+  z-index: 1;
+  line-height: 1.2;
+}
+
+@media (min-width: 1400px) {
+  .about-wordmark {
+    position: fixed;
+  }
+}
+
+.about-panel {
+  width: min(1040px, calc(100% - 32px));
+  margin: 112px auto 96px;
+  padding: 72px 96px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+  background: color-mix(in srgb, var(--about-panel) 65%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 28%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 30px 80px color-mix(in srgb, var(--black) 60%, transparent);
+  animation: fade 0.5s ease both;
+}
+
+.about-head,
+.about-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.about-head {
+  gap: 14px;
+}
+
+.about-section {
+  gap: 18px;
+}
+
+.about-head > .action {
+  align-self: flex-start;
+}
+
+.about-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 68px;
+  line-height: 0.98;
+}
+
+.about-lead {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.45;
+}
+
+.about h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.about-section p {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--text) 90%, transparent);
+}
+
+.about-section p.about-cite {
+  font-size: 14px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--text) 60%, transparent);
+}
+
+/* TMDB's logo at 14 px, well below the 30 px wordmark. */
+.about-tmdb {
+  height: 14px;
+  width: auto;
+}
+
+/* A phone: the panel takes the width less a 16 px gutter each side, and nothing scrolls sideways. */
+@media (max-width: 600px) {
+  .about-panel {
+    margin: 72px auto 40px;
+    padding: 28px 22px 36px;
+    gap: 40px;
+  }
+
+  .about-title {
+    font-size: min(68px, 13vw);
+  }
+
+  .about-lead {
+    font-size: 20px;
+  }
+
+  .about-section p {
+    font-size: 17px;
+  }
+}
+
+/* The wall below the marquee, where the door's words are typed. It takes the height the
+   marquee leaves and scrolls only when a screen's content cannot fit, such as a long
+   list of names on a short window. */
+.door-wall {
+  --top: 44px;
+  --foot: 24px;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* 40 px of room above the first line, under the marquee, so the line's scrim is never cut. */
+  margin-top: -40px;
+  padding: calc(var(--top) + 40px) var(--pad) var(--foot);
+  overflow-y: auto;
+  /* What scrolls past the foot padding fades under the foot band rather than ending square. */
+  mask-image: linear-gradient(#000 calc(100% - var(--foot)), transparent);
+  scrollbar-color: color-mix(in srgb, var(--gold) 45%, transparent) transparent;
+}
+
+/* What is said at the door: the line, then its controls, hanging from the top. */
+.door-talk {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  width: min(680px, 100%);
+  align-self: center;
+}
+
+/* The credit line on the door: the last row of the door's column, below the wall, so a long list of
+   tiles scrolls above it and never under it. The bottom right on a desktop. */
+/* The door's foot band lies behind the wall's last row, so the door's controls never move for it. */
+.door-foot {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 10px var(--pad) 24px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 16px;
+}
+
+/* "About Matinee" at the foot's middle, apart from the credit at its right, on a screen with no profile menu. */
+.door-foot > .about-link,
+.bottombar > .about-link {
+  grid-column: 2;
+  font-size: 13px;
+}
+
+.bottombar:has(> .about-link) {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.door-foot::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--band-fade)) 0 0;
+  z-index: -1;
+  background: linear-gradient(transparent, var(--shade) var(--band-fade));
+  pointer-events: none;
+}
+
+.door-foot .credits,
+.bottombar:has(> .about-link) > .credits {
+  grid-column: 3;
+  text-align: right;
+}
+
+.line.door-line {
+  font-size: 52px;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+/* A body-type line beneath Matinee's, close under it. */
+.door-detail {
+  margin-top: -12px;
+}
+
+.door-detail[hidden] {
+  display: none;
+}
+
+.door-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fade 0.5s ease both;
+}
+
+.door-controls .letterbox {
+  align-self: flex-start;
+}
+
+.door-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.door-form.narrow {
+  max-width: 260px;
+}
+
+.door-form[hidden] {
+  display: none;
+}
+
+/* ---------- a profile's mark, and the front door's tiles ---------- */
+
+/* A profile's mark: its avatar, or its initials, in a rounded square, the same on the door and in the bar. */
+.mark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: var(--mark);
+  border: 2px solid color-mix(in srgb, var(--gold) 42%, transparent);
+  color: var(--gold);
+  font-family: var(--display);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.mark.door {
+  width: 128px;
+  height: 128px;
+  border-radius: 20px;
+  font-size: 54px;
+}
+
+.mark.bar {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  border-width: 1.5px;
+  font-size: 19px;
+}
+
+/* The tiles take the width the line keeps and reflow to the screen. */
+.door-talk.at-seats {
+  width: min(788px, 100%); /* five 140 px tiles and their gaps, centred under the marquee */
+}
+
+.seats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 140px);
+  gap: 26px 22px;
+}
+
+.seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* The name's scrim stands on this wrapper: the name's own line clamp hides its overflow, which would cut it. */
+.seat-label {
+  display: block;
+  max-width: 100%;
+}
+
+/* A long name wraps to two lines and breaks inside a long word, so two names never read alike. */
+.seat-name {
+  display: -webkit-box;
+  max-width: 140px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.seat.new .mark {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--mark) 70%, transparent);
+  font-size: 64px;
+}
+
+@media (hover: hover) {
+  .seat:hover .mark {
+    border-color: var(--gold);
+    box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 35%, transparent);
+  }
+
+  .seat:hover .seat-name {
+    color: var(--gold-words);
+  }
+}
+
+.seat:focus-visible {
+  outline: none;
+}
+
+.seat:focus-visible .mark {
+  outline: 2px solid var(--gold-words);
+  outline-offset: 3px;
+}
+
+.seat:disabled {
+  cursor: default;
+}
+
+/* A short desktop window (a 720 px laptop) keeps two rows of tiles, or three of avatars, in view. */
+@media (min-width: 601px) and (max-height: 760px) {
+  .door-wall {
+    --top: 24px;
+  }
+
+  .seats {
+    grid-template-columns: repeat(auto-fill, 116px);
+    gap: 16px 20px;
+  }
+
+  .mark.door {
+    width: 100px;
+    height: 100px;
+    border-radius: 16px;
+    font-size: 42px;
+  }
+
+  .seat-name {
+    max-width: 116px;
+    font-size: 22px;
+  }
+
+  .door-talk.at-seats {
+    width: min(788px, 100%);
+    gap: 18px;
+  }
+
+  .door-talk.at-seats .door-line {
+    font-size: 40px;
+  }
+}
+
+/* Choosing an avatar: the fifteen as smaller marks, in rows. */
+.avatar-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 88px);
+  gap: 12px;
+}
+
+.avatar-choice {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.avatar-choice .mark.door {
+  width: 88px;
+  height: 88px;
+  border-radius: 15px;
+}
+
+@media (min-width: 601px) and (max-height: 760px) {
+  .avatar-choice .mark.door {
+    width: 68px;
+    height: 68px;
+    border-radius: 12px;
+  }
+
+  .avatar-choices {
+    grid-template-columns: repeat(auto-fill, 68px);
+    gap: 10px;
+  }
+}
+
+.avatar-choice[aria-pressed="true"] .mark {
+  border-color: var(--gold);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+@media (hover: hover) {
+  .avatar-choice:hover .mark {
+    border-color: var(--gold);
+  }
+}
+
+.avatar-choice:focus-visible {
+  outline: none;
+}
+
+.avatar-choice:focus-visible .mark {
+  outline: 2px solid var(--gold-words);
+  outline-offset: 3px;
+}
+
+/* The door's actions stand at the left of its column; the last step of making a profile centres its one. */
+.door-controls > .action,
+.door-form > .action {
+  align-self: flex-start;
+}
+
+.door-controls > .find-me {
+  align-self: center;
+  margin-top: 18px;
+}
+
+.field {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--white) 22%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--action) 95%, transparent);
+  color: var(--text);
+  font: 16px var(--body);
+}
+
+.field::placeholder {
+  color: color-mix(in srgb, var(--text) 45%, transparent);
+}
+
+.field:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.field.pin {
+  font-size: 22px;
+  letter-spacing: 0.5em;
+}
+
+/* The trigger picker: the question and saving on the left, the topics on the right.
+   It takes the wall's height below the marquee; the topic list scrolls in its own box
+   and keeps at least three rows. */
+.picker {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: min(1000px, 100%);
+  align-self: center;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto auto auto;
+  column-gap: 44px;
+  row-gap: 14px;
+  animation: fade 0.5s ease both;
+}
+
+.picker > * {
+  grid-column: 1;
+}
+
+/* The heading keeps its whole height when the picker is short (the base line's 2em floor would let
+   its grid row collapse under it); the topic list gives up room first. */
+.picker .door-line {
+  grid-row: 1;
+  font-size: 40px;
+  min-height: auto;
+}
+
+.picker-lead {
+  grid-row: 2;
+}
+
+.picker-status {
+  grid-row: 5;
+}
+
+.picker-status:empty {
+  display: none;
+}
+
+.picker-actions {
+  grid-row: 6;
+}
+
+.picker > .picker-topics {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* The topics: letterboxes in at most two aligned columns, never narrower than 200 px, each row as tall as
+   its taller topic, in a box that scrolls on its own. Its side padding holds the letterboxes' 22 px glow;
+   its foot keeps clear of the tally line. */
+.topic-list {
+  flex: 1 1 0;
+  min-height: 140px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(200px, calc(50% - 5px)), 1fr));
+  /* Rows take their content's height even when the list overflows its box; auto rows would shrink to
+     a letterbox's 44 px floor and hide a wrapped topic's second line. */
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 10px;
+  margin: -12px -24px 0;
+  padding: 12px 24px;
+  scrollbar-color: color-mix(in srgb, var(--gold) 45%, transparent) transparent;
+}
+
+/* A chosen topic shows a check mark in a gutter before its words, which every topic keeps, so choosing
+   one never moves its words or changes its size. */
+.topic {
+  position: relative;
+  padding-left: 42px;
+}
+
+.topic[aria-pressed="true"]::before {
+  content: "✓";
+  position: absolute;
+  left: 16px;
+}
+
+.topic[hidden] {
+  display: none;
+}
+
+/* Under the topics: their count, and DoesTheDogDie's action beside it; on a desktop the count wraps its own
+   words so the action stays beside it, and on a phone the action drops beneath. */
+.topic-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+@media (min-width: 761px) {
+  .topic-foot {
+    flex-wrap: nowrap;
+  }
+
+  .topic-foot > .note {
+    min-width: 0;
+  }
+
+  .topic-foot > .action {
+    flex-shrink: 0;
+  }
+}
+
+.picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.topics-trouble {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .marquee {
+    --shade-h: 260px;
+    padding-top: 16px;
+  }
+
+  .mq-frame-wide {
+    display: none;
+  }
+
+  .mq-frame-narrow {
+    display: block;
+  }
+
+  .marquee.plain .sign-name {
+    font-size: 58px;
+  }
+
+  .credits {
+    font-size: 11px;
+  }
+
+  /* On a phone the corner credit line is centred at the foot of the screen. */
+  .bottombar .credits {
+    flex-basis: 100%;
+    max-width: none;
+    text-align: center;
+  }
+
+  /* On a phone the line hangs under the marquee and the answers sit at the foot, under the thumb. */
+  .door-wall {
+    --top: 26px;
+    --foot: 12px;
+  }
+
+  .door-talk {
+    flex-grow: 1;
+    gap: 18px;
+  }
+
+  .door-foot {
+    padding: 6px var(--pad) 14px;
+  }
+
+  .door-foot,
+  .bottombar:has(> .about-link) {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 6px;
+  }
+
+  .door-foot > .about-link,
+  .bottombar > .about-link,
+  .door-foot .credits,
+  .bottombar:has(> .about-link) > .credits {
+    grid-column: 1;
+    text-align: center;
+  }
+
+  .line.door-line {
+    font-size: 34px;
+  }
+
+  .door-controls {
+    margin-top: auto;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+
+  .seats {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 18px 12px;
+  }
+
+  .seat-name {
+    max-width: 100%;
+    font-size: 21px;
+  }
+
+  .mark.door {
+    width: 96px;
+    height: 96px;
+    border-radius: 16px;
+    font-size: 40px;
+  }
+
+  .avatar-choices {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .avatar-choice .mark.door {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 12px;
+  }
+
+  .picker {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto auto auto;
+    row-gap: 12px;
+  }
+
+  .picker .door-line {
+    font-size: 28px;
+  }
+
+  .picker > .picker-topics {
+    grid-column: 1;
+    grid-row: 3;
+    gap: 10px;
+  }
+
+  .topic-list {
+    gap: 8px;
+    margin: -12px -12px 0;
+    padding: 12px;
+  }
+
+  .topic {
+    padding-left: 36px;
+  }
+
+  .topic[aria-pressed="true"]::before {
+    left: 13px;
+  }
+
+  /* While the picker is open the drawing folds away and the lit strip stands in its place. */
+  .marquee.compact {
+    padding-top: 10px;
+  }
+
+  .marquee.compact .mq-drawings {
+    grid-template-rows: 0fr;
+  }
+
+  .marquee.compact .mq-frame {
+    opacity: 0;
+    transform: scale(0.15);
+  }
+
+  .marquee.compact .sign-name {
+    display: none;
+  }
+
+  /* The strip fades in as the drawing fades, and out at once when the picker closes. */
+  .mq-strip {
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.2s ease,
+      visibility 0s linear 0.2s;
+  }
+
+  .marquee.compact .mq-strip {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 0.3s ease 0.15s,
+      visibility 0s;
+  }
+
+  .marquee.compact + .door-wall {
+    --top: 12px;
+  }
+}
+
+/* The name tag at the top of the wall when the viewer has a profile. */
+/* The viewer at the right of the top bar: their mark and their name in the wordmark's face, smaller,
+   in cream, on a dark backing so the name reads over any poster. */
+.viewer {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.viewer-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid color-mix(in srgb, var(--gold) 28%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--base) 72%, transparent);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.viewer-name,
+.viewer-initials {
+  overflow: hidden;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewer-name {
+  max-width: 320px;
+}
+
+.viewer-initials {
+  display: none;
+}
+
+@media (hover: hover) {
+  .viewer-button:hover {
+    border-color: var(--gold);
+  }
+}
+
+.viewer-button:focus-visible {
+  outline: 2px solid var(--gold-words);
+  outline-offset: 2px;
+}
+
+.viewer-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius: 12px;
+  background: var(--menu);
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--black) 70%, transparent);
+}
+
+.viewer-menu[hidden] {
+  display: none;
+}
+
+.viewer-item {
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: 600 16px var(--body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.viewer-item:hover,
+.viewer-item:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+}
+
+.viewer-item.danger {
+  color: var(--velvet);
+}
+
+/* A panel beneath the viewer: Change avatar, and Delete profile's question. */
+.viewer-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  width: min(560px, calc(100vw - 2 * var(--pad)));
+  padding: 18px 20px 20px;
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 22px 60px color-mix(in srgb, var(--black) 75%, transparent);
+}
+
+.viewer-panel .note:empty {
+  display: none;
+}
+
+.line.viewer-line {
+  min-height: 0;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.viewer-panel .avatar-choices {
+  align-self: stretch;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.viewer-panel .avatar-choice .mark.door {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 12px;
+}
+
+.viewer-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.viewer-panel .line.viewer-line .ask {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.letterbox.danger {
+  color: var(--velvet);
+}
+
+/* Inside the profile menu's panels a letterbox has no glow at rest; it glows on hover. */
+.viewer-panel .letterbox {
+  --lb-glow: 0 0 0 transparent;
+}
+
+@media (hover: hover) {
+  .viewer-panel .letterbox:hover {
+    --lb-glow: 0 0 18px color-mix(in srgb, var(--glow) 55%, transparent);
+  }
+}
+
+/* On a phone the top bar stays one row: a name over ten characters shows as initials beside the avatar,
+   or as the avatar's own initials when it has none. */
+@media (max-width: 600px) {
+  .viewer-name {
+    font-size: 19px;
+  }
+
+  .viewer.long .viewer-name {
+    display: none;
+  }
+
+  .viewer.long.has-avatar .viewer-initials {
+    display: inline;
+    font-size: 19px;
+  }
+
+  .viewer.long:not(.has-avatar) .viewer-button {
+    padding-right: 4px;
+  }
+
+  .viewer-panel {
+    position: fixed;
+    top: 72px;
+    right: var(--pad);
+    left: var(--pad);
+    width: auto;
+  }
+
+  .line.viewer-line {
+    font-size: 28px;
+  }
+
+  .viewer-panel .avatar-choices {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .viewer-panel .avatar-choice .mark.door {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+}
+
+/* A short phone: the marquee scales down and leaves the wall room for the door's choices; in the
+   picker the topic list may shrink to one scrolling row so "Save and continue" stays on screen. */
+@media (max-width: 600px) and (max-height: 640px) {
+  .marquee {
+    zoom: 0.75;
+  }
+
+  .door-wall {
+    --foot: 12px;
+  }
+
+  .picker {
+    row-gap: 4px;
+  }
+
+  .picker .door-line {
+    font-size: 24px;
+  }
+
+  .picker > .picker-topics {
+    gap: 6px;
+  }
+
+  .picker-topics .field {
+    min-height: 40px;
+    padding: 8px 14px;
+  }
+
+  .topic-list {
+    min-height: 40px;
+  }
+
+  .line.door-line {
+    font-size: 26px;
+  }
+}
+
+/* A narrow desktop: the picker stacks as on a phone, so the topics keep a readable width. */
+@media (min-width: 601px) and (max-width: 760px) {
+  .picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .picker > .picker-topics {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+/* A short desktop: the picker's heading tightens so the picker fits without scrolling. */
+@media (max-height: 820px) and (min-width: 601px) {
+  .door-wall {
+    --top: 28px;
+    --foot: 16px;
+  }
+
+  .picker .door-line {
+    font-size: 34px;
+  }
+
+  .picker {
+    row-gap: 10px;
+  }
+}
+
+/* ---------- the locked door ---------- */
+
+/* Before admission the locked door stands in the poster wall's place, under the marquee, which stands
+   above every layer and does not move. Back to front: subway tile, the wooden frame and step, the painted
+   door, the slot's cover over the password field. The scene hangs from the marquee's foot, which the page
+   measures into --marquee-bottom. */
+.stage.at-locked .marquee {
+  z-index: 2;
+}
+
+.locked {
+  --door-top: calc(var(--marquee-bottom, 360px) + 28px);
+  --door-h: max(240px, min(600px, calc(100vh - var(--door-top) - 76px)));
+  --door-w: calc(var(--door-h) * 2 / 3);
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--base);
+}
+
+/* Black subway tile with light grey grout, glazed: a highlight along each tile's top edge, slight grit,
+   uneven shading; a warm glow from above and a dark vignette at the edges. */
+.subway {
+  position: absolute;
+  inset: 0;
+  background: #0d0d0f url("../door/subway-tile.svg");
+}
+
+.subway::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 55% at 50% 20%, rgba(242, 179, 61, 0.2), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.78));
+}
+
+.entrance {
+  position: absolute;
+  top: var(--door-top);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translateX(-50%);
+}
+
+.door-frame {
+  position: relative;
+  width: calc(var(--door-w) + 48px);
+  height: calc(var(--door-h) + 24px);
+  padding: 24px 24px 0;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(90deg, #2a1c10, #3b2716 12%, #2e1f12 50%, #3b2716 88%, #2a1c10);
+  box-shadow: 0 0 0 2px #120c06, 0 20px 60px rgba(0, 0, 0, 0.8);
+  perspective: 1400px;
+}
+
+/* Behind the door: the warm glow it swings open onto. */
+.doorway {
+  position: absolute;
+  inset: 24px 24px 0;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255, 214, 140, 0.9), rgba(200, 120, 40, 0.45) 55%, #1a0e05);
+}
+
+.locked-door {
+  position: relative;
+  width: var(--door-w);
+  height: var(--door-h);
+  transform-origin: left center;
+  background: url("../door/door.webp") center / cover;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
+  transition: transform 0.9s cubic-bezier(0.5, 0, 0.25, 1);
+}
+
+/* The opening: the line goes, and the door swings inward on its left hinge onto the warm glow. */
+.locked.hushed .line.locked-line {
+  opacity: 0;
+}
+
+.locked.door-open .locked-door {
+  transform: rotateY(-80deg);
+}
+
+.door-step {
+  width: calc(var(--door-w) + 88px);
+  height: 16px;
+  border-radius: 2px;
+  background: linear-gradient(#3a3a3e, #1c1c1f);
+}
+
+/* The slot: the painted opening sits 18.5-81.5 per cent across and 28.6-34.6 per cent down the door. The
+   typed characters show as dots from its left edge, where the cover uncovers them first. */
+.slot {
+  --slot-h: calc(var(--door-h) * 0.06);
+  position: absolute;
+  top: 28.6%;
+  right: 18.5%;
+  left: 18.5%;
+  height: 6%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.slot-word {
+  width: 100%;
+  height: 100%;
+  padding: 0 calc(var(--slot-h) + 10px) 0 14px; /* the text never runs under the eye */
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  caret-color: var(--gold);
+  font: 600 clamp(16px, 2.6vh, 22px) var(--body);
+  letter-spacing: 0.15em;
+  text-align: left;
+}
+
+.slot-word:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(242, 179, 61, 0.6);
+}
+
+.slot-cover {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, #3a3634 0 3px, #2a2624 3px 18px);
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.8);
+  transition: transform 0.22s ease-out;
+  pointer-events: none;
+}
+
+.slot.shutting .slot-cover {
+  transition-duration: 0.4s;
+}
+
+/* The slot's invitation: a gold caret, the mark of a field a viewer types into, blinking at the cover's left
+   end while the slot is empty and holds the focus; on a touch screen, where the slot waits for a tap, whenever
+   it can take the word. */
+.slot-cover .caret {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  display: none;
+  width: auto;
+  height: 50%;
+  aspect-ratio: 0.52;
+  margin: 0;
+  translate: 0 -50%;
+  background: var(--gold);
+  animation: blink 1.1s steps(1) infinite;
+}
+
+.slot:not(.typed) .slot-word:focus + .slot-cover .caret {
+  display: block;
+}
+
+@media (pointer: coarse) {
+  .slot:not(.typed) .slot-word:enabled + .slot-cover .caret {
+    display: block;
+  }
+}
+
+/* The control that shows what is typed: a small dim eye at the slot's right end, over its cover. */
+.peek {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--slot-h);
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgba(10, 8, 6, 0.55);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.peek img {
+  width: 62%;
+  height: auto;
+}
+
+.peek:hover,
+.peek:focus-visible,
+.peek[aria-pressed="true"] {
+  opacity: 1;
+}
+
+.peek:focus-visible {
+  outline: 2px solid var(--gold-words);
+  outline-offset: -2px;
+}
+
+.peek:disabled {
+  cursor: default;
+}
+
+/* Matinee's line, typed as the pick's is, left of the door on a wide screen. A feathered dark patch behind
+   it keeps the grout's bright edges from fighting the letters. */
+.line.locked-line {
+  position: absolute;
+  top: calc(var(--door-top) + 36px);
+  right: calc(50% + var(--door-w) / 2 + 80px);
+  width: min(380px, calc(50% - var(--door-w) / 2 - 120px));
+  min-height: 0;
+  isolation: isolate;
+  font-size: clamp(28px, min(3.2vw, 5.4vh), 40px);
+  text-shadow: 0 2px 10px color-mix(in srgb, var(--black) 90%, transparent);
+  text-wrap: balance;
+  transition: opacity 0.35s ease;
+}
+
+.line.locked-line .ask {
+  margin-top: 0.15em;
+}
+
+/* A line laid out unseen, to measure the height it will take once typed. */
+.line.locked-line.probe {
+  visibility: hidden;
+}
+
+.line.locked-line::before {
+  content: "";
+  position: absolute;
+  inset: -56px -64px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--base) 92%, transparent), color-mix(in srgb, var(--base) 78%, transparent) 55%, color-mix(in srgb, var(--base) 0%, transparent));
+}
+
+/* A narrower screen: the line stands between the marquee and the door. */
+@media (max-width: 1000px) {
+  .locked {
+    --line-top: calc(var(--marquee-bottom, 300px) + 12px);
+    --door-top: calc(var(--line-top) + var(--line-h, 80px) + 28px);
+    --door-h: max(220px, calc(100vh - var(--door-top) - 60px));
+  }
+
+  .line.locked-line {
+    top: var(--line-top);
+    right: auto;
+    left: 50%;
+    width: min(560px, calc(100% - 32px));
+    font-size: clamp(24px, 4.6vw, 32px);
+    text-align: center;
+    transform: translateX(-50%);
+  }
+}
+
+/* A phone: no tile, and the door takes the screen's width inside the page's side margins. */
+@media (max-width: 600px) {
+  /* The door keeps the art's shape, so the slot's place on it holds; on a short phone it runs past the
+     screen's foot rather than squash. */
+  .locked {
+    --door-w: calc(100vw - 2 * var(--pad) - 36px);
+    --door-top: calc(var(--line-top) + var(--line-h, 80px) + 20px);
+    --door-h: calc(var(--door-w) * 3 / 2);
+  }
+
+  .subway {
+    background: var(--base);
+  }
+
+  .subway::after {
+    display: none;
+  }
+
+  .door-frame {
+    width: calc(var(--door-w) + 36px);
+    height: calc(var(--door-h) + 18px);
+    padding: 18px 18px 0;
+  }
+
+  .doorway {
+    inset: 18px 18px 0;
+  }
+
+  .door-step {
+    width: calc(100vw - 2 * var(--pad));
+  }
+
+  .line.locked-line {
+    width: calc(100% - 2 * var(--pad));
+    font-size: 24px;
+    text-align: left;
+  }
+}
+
+/* A phone held sideways: the greeting stands beside the door, as on a desktop, and the door takes the
+   height left under the marquee. */
+@media (min-width: 601px) and (max-height: 500px) {
+  .locked {
+    --door-top: calc(var(--marquee-bottom, 160px) + 12px);
+    --door-h: max(150px, calc(100vh - var(--door-top) - 30px));
+  }
+
+  .line.locked-line {
+    top: var(--door-top);
+    right: calc(50% + var(--door-w) / 2 + 48px);
+    left: auto;
+    width: min(320px, calc(50% - var(--door-w) / 2 - 64px));
+    font-size: 22px;
+    text-align: left;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .locked-door,
+  .slot-cover,
+  .line.locked-line {
+    transition: none;
+  }
+}

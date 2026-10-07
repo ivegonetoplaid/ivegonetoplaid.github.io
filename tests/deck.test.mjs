@@ -282,7 +282,7 @@ test("a flick that scrolls a tall slide to its end does not also move the deck",
   const page = await open();
   await page.evaluate(() => {
     const tall = document.createElement("div");
-    tall.style.height = "1400px";
+    tall.style.height = "900px";
     tall.style.flex = "none";
     document.querySelector(".s1").append(tall);
   });

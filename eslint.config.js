@@ -18,6 +18,7 @@ const rules = {
 };
 
 export default [
+  { ignores: ["static/**", "!static/js/", "!static/js/api.js", "demo/**"] },
   js.configs.recommended,
   {
     files: ["site/**/*.js", "static/js/api.js"],

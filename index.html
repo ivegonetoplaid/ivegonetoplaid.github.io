@@ -5,21 +5,114 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="only dark">
 <meta name="theme-color" content="#07080d">
+<meta name="description" content="Matinee asks what you're in the mood for and picks tonight's film from your Jellyfin or Plex library. Try it here.">
 <title>Matinee</title>
+<link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+<link rel="preload" href="/static/fonts/big-shoulders-display.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/site/site.css">
 <script type="module" src="/site/site.js"></script>
 </head>
 <body>
 <div class="curtain" aria-hidden="true"></div>
+
+<nav class="topbar" aria-label="Site">
+  <button class="link" type="button" id="open-about">About</button>
+  <a class="action gold" href="https://github.com/ivegonetoplaid/matinee">Get started</a>
+</nav>
+
 <nav class="dots" aria-label="Slides">
   <button type="button" aria-label="Matinee" aria-current="true"></button>
   <button type="button" aria-label="Try Matinee"></button>
   <button type="button" aria-label="What Matinee works with"></button>
 </nav>
+
 <main class="deck" id="deck">
-  <section class="slide s1" aria-label="Matinee"><h1>Matinee</h1></section>
-  <section class="slide s2" aria-label="Try Matinee"><h2>Take a seat.</h2></section>
-  <section class="slide s3" aria-label="What Matinee works with"><h2>Plays well with others.</h2></section>
+
+  <section class="slide s1" aria-label="Matinee">
+    <h1 class="marquee" id="marquee"><span class="sr-only">Matinee. Now showing: whatever you're in the mood for.</span></h1>
+    <div class="bill">
+      <p class="line"><span class="ack">Can't decide what to watch?</span><span class="ask">Tell me the mood. A few questions later, you'll have tonight's film.</span></p>
+      <p class="lede">Matinee picks from your Jellyfin or Plex film library, because there's no place like home. Not the one? Say so, and it'll be back with another, as many times as it takes. No library? It rounds up the usual suspects instead: about 10,000 well-loved films.</p>
+    </div>
+  </section>
+
+  <section class="slide s2" aria-label="Try Matinee" id="try">
+    <div class="head">
+      <h2 class="line"><span class="ack">Take a seat.</span><span class="ask wide">Tap anything. Both screens play along.</span><span class="ask narrow">Here's a working Matinee, just as it looks on your phone.</span></h2>
+    </div>
+    <div class="screens" id="screens">
+      <div class="desk-set">
+        <div class="monitor"><div class="glass" id="desk-glass"></div></div>
+        <div class="neck" aria-hidden="true"></div>
+        <div class="foot" aria-hidden="true"></div>
+      </div>
+      <div class="handset">
+        <div class="glass" id="phone-glass">
+          <div class="chrome" aria-hidden="true">
+            <div class="island"></div>
+            <div class="status"><span>7:30</span><span class="icons"><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.3 2.5l1.2-1.3C13.5 1.4 10.9.4 8 .4S2.5 1.4.5 3.4l1.2 1.3C3.4 3.1 5.6 2.2 8 2.2zm0 3.6c1.4 0 2.7.5 3.7 1.4l1.2-1.3C11.6 4.8 9.9 4.1 8 4.1S4.4 4.8 3.1 5.9l1.2 1.3c1-.9 2.3-1.4 3.7-1.4zm0 3.6c.5 0 1 .2 1.3.5L8 11.6 6.7 9.9c.3-.3.8-.5 1.3-.5z"/></svg><svg viewBox="0 0 28 13"><rect x="0.5" y="0.5" width="24" height="12" rx="3.5" fill="#fff" fill-opacity=".9"/><text x="12.5" y="9.9" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="700" font-size="9" fill="#000">82</text><rect x="25.6" y="4" width="1.8" height="5" rx=".9" fill-opacity=".5"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="try">
+      <button class="action gold" type="button" id="open-demo">Try the demo</button>
+      <p>It opens full screen. Back brings you here.</p>
+    </div>
+  </section>
+
+  <section class="slide s3" aria-label="What Matinee works with">
+    <div class="head">
+      <h2 class="line"><span class="ack">Plays well with others.</span><span class="ask">Your library, your requests, and the film data behind every pick.</span></h2>
+    </div>
+    <ul class="lobby" aria-label="What Matinee works with">
+      <li class="case"><span class="name">Jellyfin</span><span class="logo"><img src="/site/img/logo-jellyfin.svg" alt="Jellyfin logo"></span></li>
+      <li class="case"><span class="name">Plex</span><span class="logo"><img src="/site/img/logo-plex.svg" alt="Plex logo"></span></li>
+      <li class="case"><span class="name">Seerr</span><span class="logo"><img src="/site/img/logo-seerr.svg" alt="Seerr logo"></span></li>
+      <li class="case"><span class="name">TMDB</span><span class="logo"><img src="/site/img/logo-tmdb.svg" alt="TMDB logo" class="square"></span></li>
+      <li class="case"><span class="name">DTDD</span><span class="logo"><img src="/site/img/logo-doesthedogdie.webp" alt="DoesTheDogDie logo" class="square"></span></li>
+      <li class="case"><span class="name">MovieLens</span><span class="logo"><img src="/site/img/logo-movielens.svg" alt="MovieLens logo"></span></li>
+    </ul>
+    <a class="cta" href="https://github.com/ivegonetoplaid/matinee"><img src="/site/img/ticket.webp" alt="" width="360" height="364"><span class="line"><span class="ack">Name the mood. We'll find the picture.</span></span><span class="ask"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>Grab your ticket on GitHub. Popcorn not included.</span></a>
+    <p class="disclaim">Matinee is not endorsed by or affiliated with any of the projects shown here. Their names and logos belong to their owners.</p>
+  </section>
 </main>
+
+<div class="about" id="about" hidden role="dialog" aria-modal="true" aria-labelledby="about-title">
+  <article class="about-panel">
+    <button class="action cream about-close" type="button" id="close-about">Close</button>
+    <h2 id="about-title">About Matinee</h2>
+    <p class="lead">Tell Matinee what you're in the mood for and it picks tonight's film from the library.</p>
+    <h3>Why it exists</h3>
+    <p>It started with a problem I kept running into. I'd sit down with no idea what I was in the mood for. Eventually I'd settle on something, say a thriller, and sort the library by genre. Then I'd scroll past films I felt didn't truly belong, and the ones I actually wanted got lost in the noise.</p>
+    <p>So I built a small recommender, just for me. Along the way I found the MovieLens tag genome and DoesTheDogDie, and each one pulled the project further. It grew into what you're using now: a way to land on the film you actually feel like watching tonight.</p>
+    <p>It won't always get it right. Where a film belongs is a judgment call, and yours may differ from mine. If you think I've put something in the wrong place, you can tell me where it fits best by choosing "Something wrong with this pick?". Every note reaches whoever runs Matinee, and when they agree, the film moves for everyone.</p>
+    <h3>How it knows what a film feels like</h3>
+    <p>Genre labels are blunt. The tag genome is the opposite. It comes from MovieLens, a research project at the University of Minnesota, and it scores thousands of films against more than a thousand tags like atmospheric, dark humor, slow paced and twist ending, learned from the tags and ratings of MovieLens users. Matinee leans on it to judge how much gore a horror film carries.</p>
+    <p>It's a genuinely fascinating piece of work, and worth a look.</p>
+    <p><a href="https://movielens.org" target="_blank" rel="noopener noreferrer">Visit MovieLens</a> · <a href="https://grouplens.org/datasets/movielens/" target="_blank" rel="noopener noreferrer">The tag genome dataset</a></p>
+    <p class="cite">Harper and Konstan (2015), The MovieLens Datasets: History and Context. Vig, Sen and Riedl (2012), The Tag Genome: Encoding Community Knowledge to Support Novel Interaction.</p>
+    <h3>How it steers around things</h3>
+    <p>DoesTheDogDie is a site where people vote on what's in a film, so you can know before you watch. Its name is its most famous question, but it covers hundreds of topics, from spiders to needles. It's a lovely bit of community work, and worth a visit.</p>
+    <p>When you ask Matinee to steer around something, it checks each pick against those votes before showing it to you. It's best effort: a film nobody has voted on can't be checked, and Matinee tells you when that happens.</p>
+    <p><a href="https://www.doesthedogdie.com" target="_blank" rel="noopener noreferrer">Powered by DoesTheDogDie.com</a></p>
+    <h3>Posters and film data</h3>
+    <p>On this demo, the posters come from my own film library.</p>
+    <p><a href="https://www.themoviedb.org" target="_blank" rel="noopener noreferrer"><img class="about-tmdb" src="/static/credits/tmdb.svg" alt="TMDB" width="108" height="14"></a></p>
+    <p class="cite">This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <h3>Good company</h3>
+    <p>Matinee only picks the film. Two projects I've relied on for years take care of the rest of the evening, and both are worth your time.</p>
+    <p>Jellyfin is a free, open-source media server: your own films, kept on your own computer, ready on the screens around the house.</p>
+    <p>Seerr is where a film you don't have yet becomes one you can ask for. Matinee can open any pick there, and in my house that's the very next step after a pick we don't own. It's free and open source too, from the team behind Overseerr and Jellyseerr.</p>
+    <p><a href="https://jellyfin.org" target="_blank" rel="noopener noreferrer">Visit Jellyfin</a> · <a href="https://seerr.dev" target="_blank" rel="noopener noreferrer">Visit Seerr</a></p>
+    <p class="cite">Jellyfin, Plex, Seerr, TMDB, DoesTheDogDie and MovieLens are shown to say Matinee works with them; none of them endorses it. Plex and the Plex logo are trademarks of Plex and used under a license. The Jellyfin logo is by the Jellyfin contributors, CC BY-SA 4.0. The Seerr logo is from the Seerr project, under the MIT licence.</p>
+    <p class="cite mine">The posters on this site belong to their studios and are shown to illustrate the software. If one is yours, open an issue on the site's repository and it comes down.</p>
+  </article>
+</div>
+
+<div class="demo" id="demo" hidden>
+  <button class="demo-chip" type="button" id="close-demo" aria-label="Close the demo">Demo <span aria-hidden="true">✕</span></button>
+  <div class="glass" id="full-glass"></div>
+</div>
 </body>
 </html>

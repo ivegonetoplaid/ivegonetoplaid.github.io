@@ -1,10 +1,33 @@
-/* Matinee's demo site: a deck of three slides over one curtain that never moves. */
+/* Matinee's demo site: a deck of three slides over one curtain that never moves. It wears Matinee's own type and
+   colours. One bright thing at a time: the marquee on the first slide. */
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-weight: 800;
+  font-display: block;
+  src: url("/static/fonts/big-shoulders-display.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/static/fonts/dm-sans.woff2") format("woff2");
+}
+
 :root {
   color-scheme: only dark;
   --base: #07080d;
   --bordeaux: #5e1424;
   --gold: #f2b33d;
+  --gold-words: #f6ca77;
   --text: #efe9dc;
+  --dim: color-mix(in srgb, var(--text) 66%, transparent);
+  --strip-ink: #121212;
+  --action: #161926;
+  --petrol: #3b7c8c;
+  --cream-edge: #a39e93;
+  --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --body: "DM Sans", "Helvetica Neue", Arial, sans-serif;
   --gutter: clamp(16px, 4vw, 48px);
 }
 
@@ -19,6 +42,16 @@ body {
   margin: 0;
   background: var(--base);
   color: var(--text);
+  font: 400 17px/1.55 var(--body);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* The page never scrolls; the slides are layers over the curtain. */
@@ -28,15 +61,36 @@ body {
   overflow: hidden;
 }
 
+/* One curtain behind everything: the rendered velvet, the tall crop on a screen taller than 3:4, over a curtain
+   drawn in CSS that shows while the picture loads. */
 .curtain {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: var(--bordeaux);
+  background-color: var(--bordeaux);
+  background-position: center top;
+  background-size: cover, auto, auto, auto;
+  background-repeat: no-repeat, no-repeat, repeat, repeat;
+  background-image:
+    url("/site/img/curtain-wide.webp"),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.55)),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0, rgba(255, 255, 255, 0.05) 46px, rgba(0, 0, 0, 0.3) 92px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.22) 0, rgba(255, 210, 200, 0.07) 23px, rgba(0, 0, 0, 0.2) 57px);
 }
 
-/* A slide: one screen of things standing on the curtain. A slide taller than the screen scrolls inside itself
-   before the deck moves on. */
+@media (max-aspect-ratio: 3 / 4) {
+  .curtain {
+    background-image:
+      url("/site/img/curtain-tall.webp"),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 22%, transparent 78%, rgba(0, 0, 0, 0.55)),
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.38) 0, rgba(255, 255, 255, 0.05) 46px, rgba(0, 0, 0, 0.3) 92px);
+    background-size: cover, auto, auto;
+    background-repeat: no-repeat, no-repeat, repeat;
+  }
+}
+
+/* A slide: one screen of things standing on the curtain. The next rises over it; this one sinks back and fades.
+   A slide taller than the screen scrolls inside itself before the deck moves on. */
 .slide {
   position: absolute;
   inset: 0;
@@ -48,6 +102,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: safe center;
+  gap: clamp(20px, 4svh, 40px);
   transform-origin: 50% 40%;
   will-change: transform, opacity;
 }
@@ -85,4 +140,749 @@ body {
 .dots button:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 3px;
+}
+
+/* Matinee's line, as on its own page: a short sentence in gold, the next beneath it in cream. It types out once
+   when its slide first arrives, holding its final shape while it types, with no caret. */
+.line {
+  margin: 0;
+  font: 800 clamp(28px, min(4.2vw, 6svh), 54px) / 1.02 var(--display);
+  text-wrap: balance;
+}
+
+.line .ack {
+  display: block;
+  color: var(--gold);
+}
+
+.line .ask {
+  display: block;
+  color: var(--text);
+}
+
+.line .rest {
+  color: transparent;
+}
+
+/* A gentle feathered scrim behind words that stand on the curtain, lighter than Matinee's. */
+.bill::before,
+.head::before,
+.cta::before {
+  content: "";
+  position: absolute;
+  inset: -48px -72px;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(7, 8, 13, 0.5), rgba(7, 8, 13, 0.28) 62%, transparent);
+  pointer-events: none;
+}
+
+/* ---- Slide one: the marquee, as on Matinee's front door, and how Matinee works ---- */
+.s1 {
+  gap: clamp(14px, 2.6svh, 32px);
+}
+
+.marquee {
+  margin: 0;
+  width: min(924px, 100%, (100svh - 330px) * 924 / 372);
+  aspect-ratio: 924 / 372;
+}
+
+.marquee .mq-frame-narrow {
+  display: none;
+}
+
+.mq {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.mq text {
+  font-family: var(--display);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.mq-wide .mq-name text {
+  font-size: 104px;
+  letter-spacing: 0.12em;
+}
+
+.mq-narrow .mq-name text {
+  font-size: 58px;
+  letter-spacing: 0.12em;
+}
+
+.mq-board {
+  fill: var(--strip-ink);
+}
+
+.mq-wide .mq-board-small {
+  font-size: 17px;
+  letter-spacing: 0.26em;
+}
+
+.mq-wide .mq-board-big {
+  font-size: 32px;
+  letter-spacing: 0.04em;
+}
+
+.mq-narrow .mq-board-small {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+}
+
+.mq-narrow .mq-board-big {
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+/* Each bulb twinkles on its own beat; the chase darkens it twice a lap, half a lap apart. */
+.mq-lit {
+  animation: mq-chase 12s linear infinite;
+}
+
+.mq-twinkle {
+  animation: mq-twinkle 2s ease-in-out infinite;
+}
+
+@keyframes mq-chase {
+  0%,
+  50% {
+    opacity: 0.06;
+  }
+
+  1.6%,
+  51.6%,
+  49.99%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes mq-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.78;
+  }
+}
+
+.bill {
+  position: relative;
+  text-align: center;
+  display: grid;
+  gap: 16px;
+  justify-items: center;
+  max-width: 46rem;
+}
+
+.bill .line {
+  font-size: clamp(26px, min(3.6vw, 5.2svh), 46px);
+}
+
+.lede {
+  margin: 0;
+  max-width: 38rem;
+  text-wrap: balance;
+}
+
+/* ---- Slide two: one demo, shown on a monitor and a phone at once ---- */
+.head {
+  position: relative;
+  text-align: center;
+  display: grid;
+  gap: 8px;
+  max-width: 54rem;
+}
+
+.head .line .narrow {
+  display: none;
+}
+
+.screens {
+  --h: min(calc(100svh - 450px), 520px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(24px, 4vw, 64px);
+  width: 100%;
+}
+
+.desk-set {
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+}
+
+/* The monitor: a dark bezel with a deeper chin, on a neck and a foot. */
+.monitor {
+  position: relative;
+  width: min(calc(var(--h) * 1.6), 60vw);
+  box-sizing: border-box;
+  padding: 12px 12px 30px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1c1d22, #0e0f13);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px #000,
+    0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.monitor::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 11px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: #2c2d33;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.monitor .glass {
+  aspect-ratio: 16 / 10;
+  border-radius: 3px;
+}
+
+.neck {
+  width: 15%;
+  height: calc(var(--h) * 0.11);
+  background: linear-gradient(90deg, #121317, #2a2b31 45%, #15161a);
+  clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
+}
+
+.foot {
+  width: 34%;
+  height: 9px;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(180deg, #34353b, #141519);
+  box-shadow: 0 14px 22px rgba(0, 0, 0, 0.55);
+}
+
+/* The phone: a rounded body with side keys, edge-to-edge glass, the camera island and a status bar. */
+.handset {
+  position: relative;
+  height: calc(min(calc(var(--h) * 1.6), 60vw) * 10 / 16 + 42px + var(--h) * 0.11 + 9px);
+  aspect-ratio: 9 / 19.5;
+  padding: 7px;
+  box-sizing: border-box;
+  border-radius: 44px;
+  background: linear-gradient(135deg, #2b2c31, #0d0e11 40%, #1d1e22);
+  box-shadow:
+    inset 0 0 0 1.5px #3a3b41,
+    0 0 0 1px #000,
+    0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.handset::before,
+.handset::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  border-radius: 2px;
+  background: #2a2b30;
+}
+
+.handset::before {
+  left: -3px;
+  top: 20%;
+  height: 8%;
+}
+
+.handset::after {
+  right: -3px;
+  top: 25%;
+  height: 12%;
+}
+
+.handset .glass {
+  height: 100%;
+  border-radius: 37px;
+  container-type: size;
+}
+
+.glass {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: var(--base);
+}
+
+/* The phone's chrome over its screen: the camera island and a status bar showing a time, signal, wifi and
+   battery. It lets taps through to the demo. */
+.chrome {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* The chrome is drawn to a 390 x 844 phone's geometry, in units of the glass it stands on. */
+.island {
+  position: absolute;
+  left: 50%;
+  top: 1.3cqh;
+  width: 31.8cqw;
+  height: 4.27cqh;
+  transform: translateX(-50%);
+  border-radius: 20px;
+  background: #000;
+}
+
+.status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 6.9cqh;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.24cqh 6.67cqw 0 11.28cqw;
+  box-sizing: border-box;
+  color: #fff;
+  font: 600 4.36cqw / 1 var(--body);
+}
+
+.status svg {
+  height: 0.8em;
+  fill: #fff;
+}
+
+.status .icons {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+/* A phone visitor gets one button, and the demo opens over everything (the phone's full-screen demo). */
+.try {
+  display: none;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 22px;
+  border-radius: 10px;
+  background: var(--action);
+  font: 600 18px/1 var(--body);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.action.gold {
+  border: 1.5px solid var(--gold);
+  color: var(--gold-words);
+}
+
+.action.cream {
+  border: 1.5px solid var(--cream-edge);
+  color: var(--text);
+}
+
+.action:hover {
+  border-color: currentColor;
+}
+
+.action:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.demo {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--base);
+}
+
+.demo .glass {
+  width: 100%;
+  height: 100%;
+}
+
+.demo-chip {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1.5px solid var(--cream-edge);
+  border-radius: 999px;
+  background: rgba(22, 25, 38, 0.92);
+  color: var(--text);
+  font: 600 14px/1 var(--body);
+  cursor: pointer;
+}
+
+.demo-chip:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* ---- Slide three: the lobby ---- */
+.disclaim {
+  margin: 0;
+  max-width: 40rem;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--dim);
+  text-wrap: balance;
+}
+
+/* Partners as posters in lobby cases, all billed alike: the case's brass plate carries the name in black, the
+   logo stands lit inside. */
+.lobby {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(12px, 1.8vw, 28px);
+  width: min(1100px, 100%);
+}
+
+.case {
+  --w: min(160px, 13vw, calc((100svh - 580px) * 0.636));
+  position: relative;
+  width: var(--w);
+  aspect-ratio: 600 / 943;
+  container-type: inline-size;
+  background: url("/site/img/case.webp") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.55));
+}
+
+.case .name {
+  position: absolute;
+  left: 9%;
+  right: 9%;
+  top: 4.4%;
+  height: 6.6%;
+  display: grid;
+  place-items: center;
+  font: 800 11cqw/1 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1d150b;
+  text-shadow: 0 1px 0 rgba(255, 236, 190, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The logo stands as its brand drew it; the glow is the case's own light behind it, never an effect on the logo. */
+.case .logo {
+  position: absolute;
+  left: 13%;
+  right: 13%;
+  top: 17%;
+  bottom: 9%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(closest-side, rgba(255, 236, 190, 0.14), rgba(255, 236, 190, 0.04) 60%, transparent);
+}
+
+.case .logo img {
+  width: 74%;
+  height: auto;
+  max-height: 70%;
+  object-fit: contain;
+}
+
+.case .logo img.square {
+  width: 52%;
+}
+
+/* The way in: Matinee's own Admit One ticket, swaying, with the tagline and the GitHub line beneath. */
+.cta {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.cta img {
+  width: clamp(88px, min(10vw, 12svh), 140px);
+  height: auto;
+  filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.5));
+  animation: sway 3.2s ease-in-out infinite;
+  transition: transform 200ms;
+}
+
+.cta:hover img {
+  animation-play-state: paused;
+  transform: rotate(-6deg) scale(1.06);
+}
+
+.cta .line {
+  font-size: clamp(24px, min(3vw, 4.6svh), 38px);
+}
+
+.cta .ask {
+  display: block;
+  max-width: 30rem;
+  font: 600 16px/1.4 var(--body);
+  text-wrap: balance;
+}
+
+.cta svg {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: -3px;
+  fill: currentColor;
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-2deg) translateY(0);
+  }
+
+  50% {
+    transform: rotate(1deg) translateY(5px);
+  }
+}
+
+/* The top bar: a small way to About, and the way in. */
+.topbar {
+  position: fixed;
+  z-index: 5;
+  top: env(safe-area-inset-top, 0px);
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px var(--gutter);
+}
+
+.topbar .link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: 600 15px/1 var(--body);
+  text-decoration: underline;
+  text-decoration-color: rgba(242, 179, 61, 0.5);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.topbar .link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.topbar .action {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+/* About: Matinee's own About, on a dark panel over the curtain. */
+.about {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(7, 8, 13, 0.78);
+}
+
+.about-panel {
+  position: relative;
+  box-sizing: border-box;
+  width: min(720px, calc(100% - 2 * var(--gutter)));
+  margin: clamp(16px, 6svh, 64px) auto;
+  padding: clamp(24px, 4vw, 48px);
+  border-radius: 10px;
+  background: #090a10;
+  box-shadow:
+    0 0 0 1px rgba(242, 179, 61, 0.25),
+    0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.about-panel h2 {
+  margin: 0 0 6px;
+  font: 800 44px/1 var(--display);
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.about-panel h3 {
+  margin: 30px 0 8px;
+  font: 800 24px/1.1 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gold);
+}
+
+.about-panel p {
+  margin: 0 0 12px;
+  max-width: 64ch;
+}
+
+.about-panel .lead {
+  font-size: 19px;
+}
+
+.about-panel .cite {
+  font-size: 14px;
+  color: var(--dim);
+}
+
+.about-panel a {
+  color: var(--gold-words);
+  text-underline-offset: 3px;
+}
+
+.about-panel .mine {
+  margin-top: 30px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(242, 179, 61, 0.35);
+}
+
+.about-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+@media (max-height: 880px) and (min-width: 601px) {
+  .marquee {
+    width: min(924px, 100%, (100svh - 300px) * 924 / 372);
+  }
+}
+
+@media (max-height: 760px) and (min-width: 601px) {
+  .marquee {
+    width: min(924px, 100%, (100svh - 380px) * 924 / 372);
+  }
+}
+
+@media (max-width: 900px) {
+  .lobby {
+    width: min(100%, 480px);
+  }
+
+  .case {
+    --w: min(26vw, 140px, calc((100svh - 520px) * 0.32));
+  }
+}
+
+@media (max-width: 600px) {
+  .marquee {
+    width: min(374px, 100%, (100svh - 360px) * 374 / 260);
+    aspect-ratio: 374 / 260;
+  }
+
+  .marquee .mq-frame-wide {
+    display: none;
+  }
+
+  .marquee .mq-frame-narrow {
+    display: block;
+  }
+
+  .screens {
+    --h: 44svh;
+  }
+
+  .desk-set,
+  .head .line .wide {
+    display: none;
+  }
+
+  .head .line .narrow {
+    display: block;
+  }
+
+  .slide {
+    padding-right: 30px;
+    gap: 22px;
+  }
+
+  .dots {
+    right: 8px;
+    gap: 12px;
+  }
+
+  .dots button {
+    width: 9px;
+    height: 9px;
+  }
+
+  .handset {
+    height: var(--h);
+    cursor: pointer;
+  }
+
+  .try {
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .try p {
+    margin: 0;
+    color: var(--dim);
+    font-size: 15px;
+  }
+
+  .topbar {
+    gap: 14px;
+    padding-block: 10px;
+  }
+
+  /* The title stops short of the Close button. */
+  .about-panel h2 {
+    padding-right: 96px;
+  }
+}
+
+@media (max-width: 600px) and (max-height: 700px) {
+  .lede {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+}
+
+/* Under reduced motion the ticket and the bulbs stand still and every line appears whole. */
+@media (prefers-reduced-motion: reduce) {
+  .mq-lit,
+  .mq-twinkle,
+  .cta img {
+    animation: none;
+  }
+
+  .dots button {
+    transition: none;
+  }
 }
