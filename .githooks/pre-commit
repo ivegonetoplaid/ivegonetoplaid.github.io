@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Before every commit: the household's leak check, where its sibling checkout exists, then the site's gate.
+set -euo pipefail
+if [[ -x ../dotfiles/git-hooks/pre-commit ]]; then
+    ../dotfiles/git-hooks/pre-commit
+fi
+./check.sh

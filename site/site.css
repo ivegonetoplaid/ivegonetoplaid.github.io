@@ -1,0 +1,88 @@
+/* Matinee's demo site: a deck of three slides over one curtain that never moves. */
+:root {
+  color-scheme: only dark;
+  --base: #07080d;
+  --bordeaux: #5e1424;
+  --gold: #f2b33d;
+  --text: #efe9dc;
+  --gutter: clamp(16px, 4vw, 48px);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--base);
+  color: var(--text);
+}
+
+/* The page never scrolls; the slides are layers over the curtain. */
+.deck {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.curtain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--bordeaux);
+}
+
+/* A slide: one screen of things standing on the curtain. A slide taller than the screen scrolls inside itself
+   before the deck moves on. */
+.slide {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+  padding: clamp(72px, 9svh, 96px) var(--gutter) clamp(24px, 6svh, 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: safe center;
+  transform-origin: 50% 40%;
+  will-change: transform, opacity;
+}
+
+/* Where the visitor is: three marquee bulbs down the right edge, the current one lit. */
+.dots {
+  position: fixed;
+  z-index: 5;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  gap: 14px;
+}
+
+.dots button {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #4a2a24;
+  box-shadow: inset 0 0 0 1px rgba(242, 179, 61, 0.45);
+  cursor: pointer;
+  transition:
+    background 300ms,
+    box-shadow 300ms;
+}
+
+.dots button[aria-current="true"] {
+  background: radial-gradient(circle, #fff6d8 0, #ffd27a 55%, #c98a2a 100%);
+  box-shadow: 0 0 10px 3px rgba(255, 200, 110, 0.55);
+}
+
+.dots button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}

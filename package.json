@@ -1,0 +1,16 @@
+{
+  "name": "matinee-demo-site",
+  "private": true,
+  "description": "Development tools for Matinee's demo site. The site itself is static files with no build step.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "check": "./check.sh"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "playwright": "1.59.1"
+  }
+}
