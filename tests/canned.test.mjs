@@ -94,3 +94,24 @@ test("the pictures hold no film that no screen shows", () => {
   assert.deepEqual(readdirSync(join(ROOT, "img/poster")).filter((d) => !shown.has(d)), []);
   assert.deepEqual(readdirSync(join(ROOT, "img/backdrop")).filter((d) => !revealed.has(d)), []);
 });
+
+// Fields that only ever carry something from the operator's machines, whatever their values look like.
+const PRIVATE = new Set(["item_id", "itemid", "path", "file", "folder", "server", "host", "url", "key", "token", "library"]);
+function privateFields(data, found = []) {
+  if (Array.isArray(data)) data.forEach((v) => privateFields(v, found));
+  else if (data && typeof data === "object") {
+    for (const [k, v] of Object.entries(data)) {
+      if (PRIVATE.has(k.toLowerCase())) found.push(k);
+      privateFields(v, found);
+    }
+  }
+  return found;
+}
+
+test("no canned reply carries a field that only holds something from the operator's machines", () => {
+  for (const dir of ["canned", "canned/walk", "canned/film"]) {
+    for (const f of readdirSync(join(ROOT, dir)).filter((n) => n.endsWith(".json"))) {
+      assert.deepEqual(privateFields(JSON.parse(readFileSync(join(ROOT, dir, f), "utf8"))), [], `${dir}/${f}`);
+    }
+  }
+});

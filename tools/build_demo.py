@@ -235,13 +235,17 @@ def convert(job: tuple[Path, Path, dict[str, int], bool]) -> int:
     }
     if not todo:
         return 0
+    # Each size is written under a working name and renamed into place once whole, so a failed run never leaves a
+    # cut-off picture that looks newer than its source.
     args = ["magick", f"{source}[0]", "-strip", "-colorspace", "sRGB", "-write", "mpr:p", "+delete"]
     for size, width in todo.items():
-        args += ["mpr:p", "-resize", f"{width}x", "-quality", str(QUALITY), "-write", f"webp:{out / size}", "+delete"]
+        args += ["mpr:p", "-resize", f"{width}x", "-quality", str(QUALITY), "-write", f"webp:{out / size}.part", "+delete"]
     args += ["null:"]
     done = subprocess.run(args, capture_output=True, text=True, timeout=MAGICK_S)
     if done.returncode != 0:
         raise SystemExit(f"a picture could not be converted: {done.stderr.strip()[:200]}")
+    for size in todo:
+        (out / f"{size}.part").replace(out / size)
     return len(todo)
 
 
@@ -263,13 +267,34 @@ def as_text(data: Any) -> str:
 ITEM_ID = re.compile(r"\b[0-9a-f]{32}\b|\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.IGNORECASE)
 
 
+# Fields that only ever carry something from the operator's machines, whatever their values look like (a Plex
+# item id is a plain number).
+PRIVATE_FIELDS = {"item_id", "itemid", "path", "file", "folder", "server", "host", "url", "key", "token", "library"}
+
+
+def private_fields(data: Any) -> Iterator[str]:
+    """Every field in `data`, at any depth, whose name is one of PRIVATE_FIELDS."""
+    if isinstance(data, dict):
+        for k, v in data.items():
+            if str(k).lower() in PRIVATE_FIELDS:
+                yield str(k)
+            yield from private_fields(v)
+    elif isinstance(data, list):
+        for v in data:
+            yield from private_fields(v)
+
+
 def leaks(files: dict[str, str], values: list[str]) -> list[str]:
-    """Every canned file holding a setting's value, a film folder's marker or a media-server item id."""
-    return [
-        f"canned/{name} holds something from the operator's machines"
-        for name, text in files.items()
-        if any(v and v in text for v in values) or ITEM_ID.search(text)
-    ]
+    """Every canned file holding a setting's value, a film folder's marker, a media-server item id, or a field
+    that only ever carries something from the operator's machines."""
+    found = []
+    for name, text in files.items():
+        fields = sorted(set(private_fields(json.loads(text))))
+        if fields:
+            found.append(f"canned/{name} has a private field: {', '.join(fields)}")
+        if any(v and v in text for v in values) or ITEM_ID.search(text):
+            found.append(f"canned/{name} holds something from the operator's machines")
+    return found
 
 
 @dataclass
@@ -356,11 +381,22 @@ def canned_files(rec: Recorded, fit: set[int], reveal: dict[str, list[int]], car
 
 
 def write_canned(files: dict[str, str]) -> None:
-    shutil.rmtree(CANNED, ignore_errors=True)
+    """Writes the canned files beside the old ones, then swaps them in, so a failed write leaves the old set. A
+    swap cut short between its two renames left the old set as `.canned-old`; it is put back first."""
+    fresh = SITE / ".canned-new"
+    old = SITE / ".canned-old"
+    if old.exists() and not CANNED.exists():
+        old.rename(CANNED)
+    shutil.rmtree(fresh, ignore_errors=True)
+    shutil.rmtree(old, ignore_errors=True)
     for name, text in files.items():
-        path = CANNED / name
+        path = fresh / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
+    if CANNED.exists():
+        CANNED.rename(old)
+    fresh.rename(CANNED)
+    shutil.rmtree(old, ignore_errors=True)
 
 
 def pictures(on_disk: dict[int, Folder], posters: set[int], backdrops: set[int]) -> int:
@@ -372,8 +408,7 @@ def pictures(on_disk: dict[int, Folder], posters: set[int], backdrops: set[int])
     with ThreadPoolExecutor(6) as pool:
         made = sum(pool.map(convert, jobs))
     STAMP.write_text(json.dumps(made_with) + "\n")
-    gone = prune(IMG / "poster", posters) + prune(IMG / "backdrop", backdrops)
-    print(f"pictures written: {made}; films' pictures removed: {gone}")
+    print(f"pictures written: {made}")
     return made
 
 
@@ -406,9 +441,15 @@ def main() -> int:
     found = leaks(files, [str(d) for d in dirs] + [str(table), "{tmdb-", "library.invalid"])
     if found:
         raise SystemExit("; ".join(found))
-    FILMS_FILE.write_text(json.dumps({"exclude": sorted(exclude), "reveal": reveal}, indent=2) + "\n")
-    write_canned(files)
+    # The new pictures first: they only add. Then the canned files swap in whole, then the film list, and only
+    # then do the pictures of films no longer shown go. A failure at any step leaves the last good set standing.
     pictures(on_disk, fit, revealed)
+    write_canned(files)
+    plan_text = json.dumps({"exclude": sorted(exclude), "reveal": reveal}, indent=2) + "\n"
+    FILMS_FILE.with_suffix(".part").write_text(plan_text)
+    FILMS_FILE.with_suffix(".part").replace(FILMS_FILE)
+    gone = prune(IMG / "poster", fit) + prune(IMG / "backdrop", revealed)
+    print(f"films' pictures removed: {gone}")
     print(f"films shown: {len(shown)}; with a real poster: {len(fit)}; revealed: {len(revealed)}")
     return 0
 

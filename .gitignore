@@ -1,2 +1,5 @@
 node_modules/
 test-results/
+.canned-new/
+.canned-old/
+*.part
