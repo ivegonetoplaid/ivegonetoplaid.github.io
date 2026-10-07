@@ -6,6 +6,20 @@
 // three films in turn, without end, and "Just pick one!" before a branch is chosen deals from every branch of
 // the door, or of every door.
 
+// The demo's two screens show one demo, so they say the same lines. The page's quip deck shuffles with
+// Math.random, which it reads once, when it starts; this module is read before it. So every shuffle the deck
+// makes draws from one fixed sequence, the same in every frame, while every other use of Math.random (the wall)
+// stays random.
+const native = Math.random;
+let seed = 0x6d61746e; // any fixed number; the same in every frame
+function seeded() {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+Math.random = () => (/\/quips\.js/.test(new Error().stack || "") ? seeded() : native());
+
 const files = new Map();
 
 // A canned file, fetched once.
