@@ -513,11 +513,14 @@ body {
   height: 100%;
 }
 
+/* The site's own way out, at the top centre: Matinee's top bar keeps its mark at the left and the profile at the
+   right, and leaves the middle free. */
 .demo-chip {
   position: absolute;
   z-index: 2;
-  right: 12px;
-  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  translate: -50% 0;
+  top: calc(20px + env(safe-area-inset-top, 0px));
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -841,6 +844,11 @@ body {
   .handset {
     height: var(--h);
     cursor: pointer;
+  }
+
+  /* On a phone the drawn phone is a preview: a tap opens the demo full screen. */
+  .handset .demo-frame {
+    pointer-events: none;
   }
 
   .try {
