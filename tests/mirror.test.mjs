@@ -59,8 +59,12 @@ async function same(desk, phone, expect = () => true) {
   let a;
   let b;
   while (Date.now() < until) {
-    [a, b] = await Promise.all([screenOf(desk), screenOf(phone)]);
-    if (JSON.stringify(a) === JSON.stringify(b) && expect(a)) return a;
+    try {
+      [a, b] = await Promise.all([screenOf(desk), screenOf(phone)]);
+      if (JSON.stringify(a) === JSON.stringify(b) && expect(a)) return a;
+    } catch (err) {
+      if (!/context was destroyed|navigat/i.test(err.message)) throw err; // a frame mid-reload is read again
+    }
     await new Promise((r) => setTimeout(r, 200));
   }
   assert.deepEqual(b, a, "both screens show the same screen");
