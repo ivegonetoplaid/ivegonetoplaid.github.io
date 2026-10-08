@@ -81,7 +81,8 @@ lines.
 
 The page never scrolls. Three slides stand as layers over one curtain, and the
 deck moves between them. Nothing scrolls the deck itself, not even a page inside
-a demo frame bringing something into view.
+a demo frame bringing something into view. Until the deck's script has placed
+the slides, only the first shows.
 
 **A wheel pull.**
 
@@ -558,7 +559,8 @@ being true.
   started" and the ticket link to Matinee's repository. The About carries the
   demo's poster sentence, the Plex, Jellyfin and TMDB credits, and the poster
   notice last. The About takes the keys, and Back closes it. The site's own
-  words (`index.html` and `README.md`) never say "roll again".
+  words (`index.html` and `README.md`) never say "roll again". Before the deck's
+  script arrives, only the first slide shows.
 - **The borrowed files** (`tests/page-copy.test.mjs`): `static/` holds exactly
   the files `PAGE_FILES` lists, and every one matches its checksum. Where a
   Matinee checkout is
@@ -813,7 +815,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `eslint.config.js` | Matinee's lint rules over the site's scripts and the tests |
 | `tests/serve.mjs::serve` | A static server that answers as GitHub Pages does |
 | `tests/deck.test.mjs` | The deck's gestures, judged by where the slides stand |
-| `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again" |
+| `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again", only the first slide before the deck's script |
 | `tests/page-copy.test.mjs` | The borrowed files against `PAGE_FILES`, and against the commit where a checkout is at hand |
 | `tests/canned.test.mjs` | The canned files' completeness, path membership, pictures and privacy |
 | `tests/demo-walk.test.mjs` | Every path walked to a pick and round its films, on a desktop and a phone; the canned set fetched whole; a failed load; a hunt left behind |

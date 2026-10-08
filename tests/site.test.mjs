@@ -1,6 +1,7 @@
 // The site's slides: each fits without scrolling inside itself from 1024 x 768 up and on phones 390 px wide and
 // wider, the page fetches nothing from any other service, the links reach Matinee's repository, the About ends
-// on the poster notice, and the public words never say "roll again".
+// on the poster notice, the public words never say "roll again", and
+// before the deck's script arrives only the first slide shows.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { after, before, test } from "node:test";
@@ -113,4 +114,25 @@ test("About opens over everything, takes the keys, and Back closes it", async ()
   assert.equal(await page.isVisible("#about"), false);
   assert.equal(await page.evaluate(() => document.activeElement.id), "open-about");
   await page.close();
+});
+
+test("before the deck's script arrives, only the first slide shows", async () => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  let release;
+  const held = new Promise((r) => (release = r));
+  await page.route("**/site/deck.js", async (route) => {
+    await held;
+    await route.continue();
+  });
+  // A module script holds back DOMContentLoaded, so the page is read once its slides stand styled.
+  await page.goto(`${site.origin}/`, { waitUntil: "commit" });
+  await page.waitForFunction(() => document.querySelector(".s3") && getComputedStyle(document.querySelector(".s3")).position === "absolute");
+  const shown = () => page.evaluate(() => [...document.querySelectorAll(".slide")].filter((s) => getComputedStyle(s).visibility === "visible").map((s) => s.getAttribute("aria-label")));
+  assert.deepEqual(await shown(), ["Matinee"]);
+  release();
+  await page.waitForFunction(() => document.body.dataset.slide === "0");
+  await page.locator(".dots button").nth(2).click();
+  await page.waitForFunction(() => getComputedStyle(document.querySelector(".s3")).visibility === "visible");
+  await context.close();
 });

@@ -109,6 +109,11 @@ body {
   will-change: transform, opacity;
 }
 
+/* Until the deck places the slides, only the first shows; the deck's own placing then decides. */
+.slide:not(:first-child) {
+  visibility: hidden;
+}
+
 /* Where the visitor is: three marquee bulbs down the right edge, the current one lit. */
 .dots {
   position: fixed;
