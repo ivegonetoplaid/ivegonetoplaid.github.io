@@ -48,6 +48,7 @@ SITE = Path(__file__).resolve().parent.parent
 CANNED = SITE / "canned"
 IMG = SITE / "img"
 FILMS_FILE = SITE / "tools" / "demo-films.json"
+SYNOPSES_FILE = SITE / "tools" / "synopses.json"  # written for the demo; TMDB's synopses are never kept
 DOORS = ("comedy", "horror", "scifi", "kids", "nonfiction")  # the demo's doors, in the doors question's order
 RULED = {"nonfiction"}  # doors whose films Matinee places by its own rule, not by the labels
 MOST_ANSWERS = 4  # the most answers a question shows in the demo, so none scrolls inside its screen
@@ -81,11 +82,18 @@ class Folder:
 
     @property
     def poster(self) -> Path:
-        return self.path / "folder.jpg"
+        return self.picture("folder.jpg", "-poster.jpg")
 
     @property
     def backdrop(self) -> Path:
-        return self.path / "backdrop.jpg"
+        return self.picture("backdrop.jpg", "-backdrop.jpg")
+
+    def picture(self, name: str, suffix: str) -> Path:
+        """The folder's picture named `name`, or else the first named `<film>{suffix}` (the other common naming)."""
+        plain = self.path / name
+        if plain.exists():
+            return plain
+        return next(iter(sorted(self.path.glob(f"*{suffix}"))), plain)
 
 
 def setting(name: str) -> str:
@@ -274,8 +282,17 @@ def card(c: TestClient, tmdb: int) -> dict[str, Any]:
     return {**got, "synopsis": None, "link": f"{TMDB_FILM}/{tmdb}", "link_to": "tmdb", "backdrop_path": None}
 
 
-def pick(template: dict[str, Any], film: dict[str, Any]) -> dict[str, Any]:
-    return {**template, "film": {"tmdb": film["tmdb"], "title": film["title"], "year": film["year"]}}
+def pick(template: dict[str, Any], film: dict[str, Any], synopsis: str) -> dict[str, Any]:
+    return {**template, "film": {"tmdb": film["tmdb"], "title": film["title"], "year": film["year"], "synopsis": synopsis}}
+
+
+def synopses(revealed: set[int]) -> dict[int, str]:
+    """The demo's own synopsis of every revealed film; a film without one stops the build."""
+    written = {int(k): v for k, v in json.loads(SYNOPSES_FILE.read_text())["synopses"].items()}
+    missing = sorted(revealed - set(written))
+    if missing:
+        raise SystemExit(f"no synopsis in {SYNOPSES_FILE.name} for {missing}; write one for each")
+    return written
 
 
 def convert(job: tuple[Path, Path, dict[str, int], bool]) -> int:
@@ -420,12 +437,13 @@ def canned_files(rec: Recorded, fit: set[int], reveal: dict[str, list[int]], car
     def clean(pool: list[int]) -> list[int]:
         return sorted(t for t in pool if t in fit)
 
+    written = synopses({t for films in reveal.values() for t in films})
     doors = [o for o in rec.first["options"] if o["tree"] in DOORS]
     reachable = {t for w in rec.walks.values() for t in w.steps[""]["pool"]}
     files = {
         "boot.json": as_text(rec.boot),
         "first.json": as_text({**rec.first, "options": doors, "pool": clean(list(reachable)), "source": None}),
-        "picks.json": as_text({name: [pick(rec.pick, cards[t]) for t in films] for name, films in reveal.items()}),
+        "picks.json": as_text({name: [pick(rec.pick, cards[t], written[t]) for t in films] for name, films in reveal.items()}),
     }
     for tree, w in rec.walks.items():
         files[f"walk/{tree}.json"] = as_text({k: {**s, "pool": clean(s["pool"])} for k, s in w.steps.items()})

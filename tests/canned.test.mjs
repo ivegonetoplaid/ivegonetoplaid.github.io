@@ -32,7 +32,7 @@ test("every answer a canned question offers leads to a canned step", () => {
   }
 });
 
-test("each path reveals three films, no film twice, each with its card and its backdrop", () => {
+test("each path reveals three films, no film twice, each with its card, its backdrop and the demo's own synopsis", () => {
   const seen = new Set();
   for (const [path, replies] of Object.entries(picks)) {
     assert.equal(replies.length, 3, path);
@@ -42,6 +42,7 @@ test("each path reveals three films, no film twice, each with its card and its b
       assert.ok(existsSync(join(ROOT, "canned/film", `${r.film.tmdb}.json`)), `card ${r.film.tmdb}`);
       assert.ok(existsSync(join(ROOT, "img/backdrop", String(r.film.tmdb), "l")), `backdrop ${r.film.tmdb}`);
       assert.equal(r.exhausted, null);
+      assert.ok(r.film.synopsis?.length > 20, `synopsis ${r.film.tmdb}`);
     }
   }
 });

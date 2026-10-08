@@ -1,6 +1,6 @@
 ---
-purpose: The contract Matinee's demo site holds to — the deck and its gestures, the three slides and the About, the demo (the copy of Matinee's page, the stand-in and its canned replies, the frames, the mirror between two screens, the phone's full-screen demo), the canned-walk builder, what the site fetches, the tests and the gate — with a map of where each part lives.
-updated: 2026-10-07
+purpose: The contract Matinee's demo site holds to — the deck and its gestures, the three slides and the About, the demo (the files borrowed from Matinee, the player and its canned replies, the frames, the conductor between two screens, the phone's full-screen demo), the canned-walk builder, what the site fetches, the tests and the gate — with a map of where each part lives.
+updated: 2026-10-08
 governs:
   - index.html
   - site/
@@ -34,14 +34,11 @@ the spec and the code disagree, the one that moved last decides which is wrong
 ([index](README.md)). Behaviour that is deliberately absent, unmeasured, or a snapshot is
 listed under [Known limits](#known-limits).
 
-This spec covers only what the site adds around Matinee's page. The page itself
-follows Matinee's contract (Matinee repository, `docs/spec/matinee.md`,
-section 12).
+This spec covers the site and its demo. The demo represents Matinee; what
+Matinee itself does is Matinee's contract (Matinee repository,
+`docs/spec/matinee.md`).
 
-This spec borrows Matinee's words. The *front door* is the page's profile
-screen, where a *Guest tile* opens a profile, and a *door word* can lock it. The
-*source question* asks whether to choose from the library, from films it lacks,
-or both. A *door* is one mood the first question offers (Comedy, Horror…); that
+This spec borrows Matinee's words. A *door* is one mood the first question offers (Comedy, Horror…); that
 question is the *doors question*. A door is a *genre*, and the question that
 names the kind of film inside it (slashers, slapstick) asks its *subgenre*. Each
 door asks a *tree* of questions; the answers a viewer gives are their *path*,
@@ -65,13 +62,15 @@ lines.
    request to any other origin. Links to other sites (the About's links, a
    film's TMDB page) are navigation a visitor chooses, never a fetch.
 3. **No key.** The site uses no TMDB key, no media-server key and no other key.
-4. **Matinee's page is unchanged.** The demo runs the *page copy*: a byte-for-byte copy of
-   Matinee's page from one Matinee commit (section 5.1). The only file that differs is
-   `static/js/api.js`, which the site replaces with its stand-in (section 5.2).
-   Everything else the site does to the demo, it does from outside the page.
-5. **Served from the root.** Matinee's page names every asset from the root
-   (`/static/…`, `/img/…`). The site therefore lives at the root of its origin,
-   and the page's requests resolve unchanged.
+4. **A representation of Matinee, not Matinee running.** The demo is the
+   site's own *player* (section 5.2), which plays Matinee's screens on rails.
+   It wears Matinee's own stylesheet, fonts and pictures and draws with a few of
+   Matinee's page modules, all copied byte for byte from one Matinee commit
+   (section 5.1). No part of Matinee's app runs on the site, and no copied file
+   is changed.
+5. **Served from the root.** Matinee's stylesheet and modules name every asset
+   from the root (`/static/…`, `/img/…`). The site therefore lives at the root
+   of its origin, and those requests resolve unchanged.
 6. **Nothing from the maintainer's home.** No committed file holds a host name,
    a LAN address, an internal domain, a person's name, a path from a machine, an
    item id from a media server, a key or a setting's value. The canned-walk
@@ -152,17 +151,13 @@ stands.
   gold "Get started" button. "Get started" links to
   `https://github.com/ivegonetoplaid/matinee`.
 - **Type and colour.** The site wears Matinee's own type and colours: Big
-  Shoulders Display 800 and DM Sans, loaded from the page copy's fonts, and
+  Shoulders Display 800 and DM Sans, loaded from the fonts borrowed from Matinee, and
   Matinee's gold and cream.
 - **The lines.** Each slide's line is two parts in Matinee's manner: a short
-  sentence in gold over the next in cream. A line types out once, the first time
-  its slide arrives, 260 ms after the slide starts to move. It types at
-  Matinee's pace, two characters every 24 ms. It holds its final shape while it
-  types, because the untyped rest stands in place unseen. It shows no caret.
-  Only the parts the stylesheet shows are typed. A screen reader reads the whole
-  line at once. Under reduced motion the line appears whole.
-- **The scrim.** Words standing on the curtain sit on a gentle feathered dark
-  scrim, lighter than Matinee's.
+  sentence in gold over the next in cream. The lines stand still; they do not
+  type.
+- **The scrim.** Words standing on the curtain sit on a feathered dark scrim,
+  darkest behind the words and fading out before its edge.
 - **Fit.** Every slide fits without scrolling inside itself on screens from
   1024 × 768 up, at 1280 × 720, and on phones 390 px wide and wider. A phone
   narrower than 390 px may scroll a slide inside itself.
@@ -173,7 +168,7 @@ stands.
 - The headline is Matinee's marquee, drawn as on Matinee's front door: the
   "Matinee" sign over its letter board. The board reads "Now showing" over
   "Whatever you're in the mood for".
-- The site lays Matinee's own drawings into the page from the page copy:
+- The site lays Matinee's own drawings into the page from the files borrowed from Matinee:
   `/static/marquee/marquee-wide.svg` and `marquee-narrow.svg`. The wide drawing
   shows above 600 px, the narrow one at 600 px and below. The marquee's bulbs chase as in
   Matinee. Nothing glows behind the marquee, and its lettering carries no glow.
@@ -214,8 +209,9 @@ stands.
   size: one row on a desktop, two rows of three on a phone.
 - The partner's name stands in black on the case's brass plate. DoesTheDogDie's
   plate reads "DTDD". The partner's official logo stands centred in the case,
-  unaltered. The glow is a soft light inside the case behind the logo; no effect
-  touches the logo itself.
+  unaltered. The glow is a soft light inside the case behind the logo, in the
+  logo's strongest colour, read once with Matinee's poster-glow rule and written
+  into the page; no effect touches the logo itself.
 - Beneath the cases stands Matinee's Admit One ticket, which sways gently. The
   ticket links to Matinee's repository. Under it stand the tagline "Name the
   mood. We'll find the picture." in gold and the line "Grab your ticket on
@@ -249,64 +245,68 @@ stands.
 
 ## 5. The demo
 
-### 5.1 The page copy and its record
+### 5.1 The files borrowed from Matinee
 
-- `tools/copy_page.sh MATINEE_CHECKOUT [COMMIT]` copies Matinee's page from one
-  commit of a Matinee checkout (its `HEAD` when no commit is given). The page's
-  static files go to `static/`, and its `index.html` goes to `demo/index.html`.
-- Before it puts the stand-in in place, the script records each copied file's
-  SHA-256 checksum in `PAGE_FILES`. It then copies `tools/api.js` over
-  `static/js/api.js` and writes the full commit hash to `MATINEE_COMMIT`.
+- `tools/copy_page.sh MATINEE_CHECKOUT [COMMIT]` copies, from one commit of a
+  Matinee checkout (its `HEAD` when no commit is given), only what the site
+  uses: the stylesheet (`css/`), `fonts/`, `avatars/`, `icons/`, `marquee/`,
+  `credits/`, `grain.svg`, `blank.svg`, and seven page modules the player draws
+  with (`dom.js`, `type.js`, `flight.js`, `mark.js`, `hunt-plan.js`,
+  `wall-grid.js`, `glow.js`). They go to `static/` and are never changed.
+- The script records each copied file's SHA-256 checksum in `PAGE_FILES` and
+  the full commit hash in `MATINEE_COMMIT`.
 - The site depends on the copy beyond the demo: its fonts, its marquee
   drawings, its tab icon and the About's TMDB logo come from `static/`.
 
-### 5.2 The stand-in
+### 5.2 The player
 
-The stand-in is `tools/api.js`, copied to `static/js/api.js`. It exports the
-same four helpers as Matinee's `api.js` (`get`, `post`, `put`, `del`). Each one
-resolves to `{ ok, status, data }`, as Matinee's helpers do. Nothing in it talks
-to a server.
+The player (`site/player.js`, with its wall in `site/player-wall.js`) is one
+screen of the demo. `demo/index.html`, the site's own page, loads Matinee's
+stylesheet and the player. The player builds Matinee's screens in Matinee's own
+markup, so Matinee's stylesheet dresses them exactly, and plays each press as a
+fixed script read from the canned files (section 5.3).
 
-- **Canned files.** The stand-in reads each canned file under `/canned/` once
-  and keeps it for the visit. A file that fails to load is forgotten, so the
-  next call asks for it again.
-- **Boot replies.** `/api/admission`, `/api/setup`, `/api/quips`,
-  `/api/pictures` and `/api/door` are answered from `boot.json`. Opening a
-  profile is answered with the Guest profile.
-- **The first view.** `/api/first` is answered from `first.json`.
-- **The walk.** `/api/walk` is answered from `walk/<tree>.json`, by the answers
-  given so far.
-- **A film card.** `/api/film/<id>` is answered from `film/<id>.json`.
-- **A pick.** `/api/pick` deals from `picks.json`:
-  - With a path chosen (a subgenre answer, or a door that asks nothing),
-    it deals that path's three films.
-  - With a door chosen but no answer yet ("Just pick one!" at the subgenre
-    question), it deals every path of that door, one after another.
-  - With no door, it deals every path of every door.
-  - It returns the film at position *n* modulo the deal's length, where *n* is
-    the number of films the viewer has already seen. So "Not that one"
-    cycles through the films without end, and the demo never says that the
-    films ran out.
-- **A note.** A viewer's note is answered with two lines: "Thanks for that. On
-  a real Matinee it goes to whoever runs it." and "This is only the demo."
-  Nothing is kept.
-- **Profile changes.** A changed avatar is echoed back, and deleting the profile
-  answers with the Guest profile. Nothing is kept.
-- **Failures.** A call the demo has no answer for gets a 404 reply with
-  `error: "not_found"` and a message. A canned file that cannot be read gives a
-  500 reply with `error: "refused"`, and logs a warning. Either way the page
-  receives a failure it can show, never an exception.
-- **One set of lines, one rhythm.** Matinee's page deals its quip lines and
-  plans each hunt with `Math.random`. The stand-in loads before Matinee's
-  modules and replaces `Math.random`: a call made from Matinee's quip module
-  draws from one fixed seeded sequence, and a call made from its hunt planner
-  draws from a second sequence, started afresh at each pick from that pick's
-  door, answers and draw count. Both are the same in every frame, and every
-  other call stays random. So the two screens say the same lines and hunt
-  with the same hops for the same times, while each poster wall keeps its own
-  order. The screens still land a little apart, up to about half a second:
-  Matinee's first hop always crosses its screen, and the desktop's screen is
-  wider.
+- **The walk.** It opens on the doors question, greeting the guest as Matinee
+  does ("Right this way, Guest."), with the five genres and "Just pick one!".
+  A genre shows its opening line and its subgenre question; an answer ends the
+  path. Documentaries asks nothing and goes straight to its reveal.
+- **The words.** Every line is Matinee's own: the genres' opening lines,
+  questions, answers and replies as Matinee's walk gave them, typed by Matinee's
+  own typing routine. Reveal, "Not that one" and "Just pick one!" lines are
+  drawn from Matinee's quips, from the genre's own set where it has one; the
+  same place in the walk always draws the same line.
+- **The wall.** The posters of the films still in the running drift upward in
+  a grid laid out by Matinee's own grid rules. A new pool fades in over the
+  old. After the last answer the posters take the size they keep through a
+  pick, as Matinee's do.
+- **The hunt, on rails.** After the reply has been read for 1 s, the wall eases
+  to the next whole row and hops to the picked film with Matinee's hop easing
+  and Matinee's table of hop lengths, times and pauses. The hops are drawn from
+  a seed made from the pick's place in the walk, and every hop takes its
+  table's time whatever the screen's size. Only how far the first hop must run
+  to leave the screen comes from the screen.
+- **The reveal.** The landed poster grows to 2.4 times its cell in its own
+  colour's glow while the rest of the wall dims, and the reveal line types under
+  the gold one. After a 0.5 s beat the film's details rise (on a desktop its
+  backdrop, its title, year and the demo's own synopsis) and the poster moves to
+  its slot over 1.3 s. A phone shows no backdrop; after 2.2 s its reveal
+  scrolls to the film's details inside its own box.
+- **The actions.** "Not that one" draws the path's next film, without end.
+  "Just pick one!" deals from the genre's paths, or every path at the doors. The
+  desktop's trail and the phone's "Back" lead back to the subgenre question or
+  the doors; "Start over" and the corner mark lead to the doors.
+- **Shown, doing nothing.** The guest's profile menu opens and closes, and its
+  items (Change avatar, Switch profiles, Delete profile, About Matinee) only
+  close it. "More on TMDB ↗" stands among the actions and does nothing.
+  "Something wrong with this pick?" opens Matinee's note panel; its
+  Save does nothing.
+- **No credit line.** The demo shows no TMDB credit line; the site's About
+  carries TMDB's notice and logo (section 4).
+- **One press wins.** A press that changes the screen locks every button on it
+  at once, as Matinee does.
+- **Reduced motion.** Lines show whole, the hunt stands at its landing and the
+  poster at its slot, as Matinee does under reduced motion.
+- **On its own.** `/demo/` opened alone plays its own presses at once.
 
 ### 5.3 The canned replies
 
@@ -334,7 +334,9 @@ The builder (section 6) records the canned files from Matinee's own server code.
   questions.
 - Each path reveals exactly three films. No film is revealed by two paths.
 - Each pick reply is the one recorded pick reply with its film replaced. Its
-  other fields stay as Matinee answered them.
+  film carries the demo's own synopsis from `tools/synopses.json`, written for
+  the demo and never copied from TMDB, whose terms forbid keeping its data
+  longer than six months.
 - Every film card links to `https://www.themoviedb.org/movie/<id>` with
   `link_to` set to `tmdb`. It carries no synopsis and no backdrop path.
 - The picture reply names the site itself as the picture source
@@ -345,72 +347,48 @@ The builder (section 6) records the canned files from Matinee's own server code.
   sizes Matinee's page asks for (`xs`, `s`, `m`, `l`). Each revealed film's
   backdrop exists in `l`. No picture is kept for a film no screen shows.
 
-### 5.4 The frames and Matinee's front door
+### 5.4 The frames
 
-- Each demo is Matinee's page from `/demo/`, in an `iframe`. The monitor's
-  frame is 1680 × 1050, tall enough that no screen of the demo scrolls inside
-  the drawn monitor (at 1280 × 800 Matinee's longer questions scroll by up to
-  190 px). The phone's frame is 390 × 786 and stands below the
-  drawn phone's 58 px status bar. The site scales each frame to the width of the
-  glass it stands in, and rescales it when that glass changes size. The full-screen
-  demo's frame fills the screen at its natural size.
+- Each screen is the player from `/demo/`, in an `iframe`. The monitor's frame
+  is 1680 × 1050, tall enough that no screen of the demo scrolls inside the
+  drawn monitor. The phone's frame is 390 × 786 and stands below the drawn
+  phone's 58 px status bar. The site scales each frame to the width of the
+  glass it stands in, and rescales it when that glass changes size. The
+  full-screen demo's frame fills the screen at its natural size.
 - The phone's frame is always made. The monitor's frame is made only on a
   screen wider than 600 px. A window that widens past 600 px later gets its
-  monitor's frame then, once, and both frames start again together at the
-  doors.
-- Matinee's page opens on its front door. The site never shows it. Whenever the
-  front door stands with the Guest tile ready, the site hides the frame at once
-  and presses the Guest tile. Once the doors question stands, the frame fades in
-  over 250 ms. This holds for every document the frame loads: the first load, a
-  reload, "Switch profiles" and "Delete profile". A frame being unloaded is
-  hidden at once.
-- So the visitor first sees the doors question, already signed in, with
-  the source question already answered. The visitor never sees the front door,
-  a profile, the door word or the source question.
-- Matinee's corner mark inside a frame starts the walk over inside the frame.
-  It never loads the site inside the frame; the frame stays at `/demo/`.
+  monitor's frame then, once, and it joins where the phone stands.
+- A frame shows once its player has joined the conductor (section 5.5).
+- The corner mark inside a frame starts the walk over inside the frame; the
+  frame stays at `/demo/`.
 
-### 5.5 One demo on two screens
+### 5.5 One script on every screen
 
-In a window wider than 600 px, the monitor and the drawn phone show one demo. A
-choice made in either frame is made in the other, so both show the same view
-and the same films.
+The site's *conductor* (`site/conductor.js`) keeps every screen showing the same
+thing: the monitor, the drawn phone and the full-screen demo.
 
-The site's *mirror* (`site/mirror.js`) does this.
-
-- **Clicks.** Each frame's clicks on a control (a button, a link, a menu item, a
-  radio or a checkbox) are caught before the page acts on them. The site then
-  finds the same control in the other frame and presses it there.
-- **Finding the twin.** A control is found by its tag and classes, its words
-  (its accessible name, its label or its text), and which of its kind it is.
-  Matinee's page builds both the desktop's trail and the phone's "Back" on every
-  screen and lets the stylesheet show one, so the twin exists in the other frame
-  even where it is not shown. The phone's "Back" on a pick has no twin. The site presses
-  the last way back on the desktop's trail instead. About's own "Back" never
-  takes that substitute.
-- **Order and patience.** Presses replay in the order made. The other frame is
-  given up to 4 s to show the twin, since it may still be typing or moving.
-- **Not repeated.** The site does not repeat a press it made itself. It does not
-  repeat the profile tiles each frame presses on its own, and it does not repeat
-  links that open a new tab (a film's page).
-- **Closing alike.** Escape, a press beside a control and a step back through
-  history are repeated in the other frame. So a menu or Matinee's About
-  closes in both, however it was closed.
-- **Starting again together.** When a twin never shows within 4 s, the site
-  logs a warning and reloads every frame, so both start again at the doors. A
-  frame that reloads on its own takes the other with it. Frames do not reload
-  each other without end.
+- **Presses.** A player sends each press to the conductor, which hands it to
+  every player with one start time 120 ms ahead, so all of them play it
+  together. A player draws nothing at random and times every step by fixed
+  clocks, so the screens stay together: at full motion both reach every reveal
+  within 100 ms of each other.
+- **Joining late.** A player that joins later (a monitor shown once a window
+  widens, a frame reloaded, the full-screen demo) replays at once every press
+  made since the last "Start over", and shows what the others show.
 - **The wheel.** A wheel turned over a frame moves the deck, as it does
-  anywhere on the page. A wheel that scrolls something inside the frame (About,
-  a long list) is left to the frame. The rest of that gesture stays with the
+  anywhere on the page. A wheel that scrolls something inside the frame (a
+  phone's reveal) is left to the frame. The rest of that gesture stays with the
   frame until input has been quiet for 200 ms, so a flick that scrolls to an
-  inner list's end does not also move the deck.
-- The full-screen demo (section 5.6) is not joined to the other two.
+  inner box's end does not also move the deck. Each screen stops a wheel that
+  scrolls nothing inside it, so a browser that would also pass that wheel to the
+  page around the frame (Safari's engine does) cannot move the deck itself.
+- The deck is clipped, not merely hidden, so nothing inside a frame can scroll
+  it.
 
 ### 5.6 The phone's full-screen demo
 
-- On a phone, "Try the demo" or a tap on the drawn phone opens Matinee's page
-  full screen, over everything.
+- On a phone, "Try the demo" or a tap on the drawn phone opens the demo full
+  screen, over everything.
 - The site makes the full-screen frame the first time the demo opens, and keeps it. A
   second visit finds the demo as the visitor left it.
 - The site's own chip floats at the top centre, clear of Matinee's corner mark
@@ -419,9 +397,8 @@ The site's *mirror* (`site/mirror.js`) does this.
 - Opening the demo adds one history step. The phone's Back closes it and leaves
   the visitor on slide two.
 - The chip and Escape close it by stepping back over every history step taken
-  since it opened, including steps Matinee's page took inside it (its About,
-  say). The page's history is left as it stood before the demo opened.
-- Matinee's page is not changed to provide the exit.
+  since it opened. The page's history is left as it stood before the demo
+  opened.
 
 ## 6. The canned-walk builder
 
@@ -526,9 +503,10 @@ A build cut short at any step leaves the last good set standing.
 
 - The site's page fetches its own stylesheet, scripts, curtain, case, logos and
   ticket from `/site/`, and its fonts, marquee drawings, tab icon and TMDB logo
-  from the page copy under `/static/`.
-- A demo frame fetches Matinee's page from `/demo/` and `/static/`, its canned
-  replies from `/canned/`, and its pictures from `/img/`.
+  from the files borrowed from Matinee under `/static/`.
+- A demo frame fetches its page from `/demo/`, the player from `/site/`,
+  Matinee's stylesheet, fonts and modules from `/static/`, its canned replies
+  from `/canned/`, and its pictures from `/img/`.
 - Every one of these is on the site's own origin. Nothing is fetched from any
   other service.
 
@@ -539,12 +517,12 @@ A build cut short at any step leaves the last good set standing.
 Playwright version drives, and points git at the committed hook in `.githooks/`. The site
 itself needs nothing installed.
 
-**The gate.** `./check.sh` runs ESLint over the site's own scripts, the
-stand-in and the tests. It then runs every test file, one at a time, within 600 s. The tests that
+**The gate.** `./check.sh` runs ESLint over the site's own scripts and the
+tests. It then runs every test file, one at a time, within 600 s. The tests that
 drive a page drive it in a headless Chromium. The lint rules forbid nested ternaries,
 cyclomatic complexity over 10, `var`, loose equality, and assigning
-`innerHTML` or `outerHTML`. The rest of the page copy is Matinee's own and is
-linted in Matinee.
+`innerHTML` or `outerHTML`. The files copied from Matinee are Matinee's own and
+are linted in Matinee.
 
 **The hook.** The committed pre-commit hook runs `./check.sh`. On the
 maintainer's machine it first runs a leak check that refuses anything
@@ -577,20 +555,15 @@ being true.
   demo's poster sentence, the Plex, Jellyfin and TMDB credits, and the poster
   notice last. The About takes the keys, and Back closes it. The site's own
   words (`index.html` and `README.md`) never say "roll again".
-- **The page copy** (`tests/page-copy.test.mjs`): the copy holds exactly the
-  files `PAGE_FILES` lists, and every one matches its checksum except
-  `static/js/api.js`, which equals `tools/api.js`. Where a Matinee checkout is
+- **The borrowed files** (`tests/page-copy.test.mjs`): `static/` holds exactly
+  the files `PAGE_FILES` lists, and every one matches its checksum. Where a
+  Matinee checkout is
   at hand (`MATINEE_CHECKOUT`, or a `matinee` folder beside the site), every
   checksum also matches the file at the commit in `MATINEE_COMMIT`. Elsewhere
   that half is skipped.
-- **The stand-in** (`tests/stand-in.test.mjs`): every canned walk step is
-  answered by its own answers. Each path's films come round in turn, seven
-  draws deep. Before a path, the door's paths deal. The boot replies, the
-  first screen, a film card and a note are answered. An unknown call, a missing
-  film and a failed read each give a failure, and a failed read is tried again.
 - **The canned files** (`tests/canned.test.mjs`): five doors open in order with
   no source question. Every answer leads to a canned step. Each path reveals
-  three films, none twice, each with its card and its backdrop, and none marked
+  three films, none twice, each with its card, its backdrop and a synopsis, and none marked
   as the films running out. Each revealed film stands at the end of its own path.
   Every card links to its TMDB page with no picture path and no synopsis. The
   picture source is the site's own. Every film a screen shows has its poster at
@@ -598,43 +571,42 @@ being true.
   holds an item id, a `{tmdb-` marker, a path under `/home/` or `/mnt/`, the
   placeholder address, an address other than TMDB's and DoesTheDogDie's, or a
   private field by name.
-- **The walk** (`tests/demo-walk.test.mjs`): on a desktop and on a phone, every
-  path of every door walks to a pick, round its three films in the canned
-  order and back to the first, then "Start over". The walk fails on Matinee's problem
-  screen, a page error, an unhandled rejection, a step whose next screen does
+- **The walk** (`tests/demo-walk.test.mjs`): on a desktop and on a phone, the
+  player alone walks every path of every door to its reveal, round its three
+  films in the canned order and back to the first, then "Start over". The walk
+  fails on a page error, an unhandled rejection, a step whose next screen does
   not appear in time, any request to another origin, and, on the desktop, a
   screen that scrolls inside itself. The corner mark inside
   the demo starts over in place at `/demo/`.
 - **The frames** (`tests/frames.test.mjs`): both screens open on the doors
-  question. A per-frame watch sees no front door in either frame through Change
-  avatar, Switch profiles, Delete profile and a reload. Each frame stays at
-  `/demo/`. A window that widens past a phone's width gets its monitor's demo
+  question, greeting the guest, and every item of the profile menu only closes
+  it. Each frame stays at `/demo/`. A window that widens past a phone's width gets its monitor's demo
   once.
-- **The mirror** (`tests/mirror.test.mjs`): a walk on the monitor moves the
-  drawn phone to the pick, through "Not that one" and back to the start. A walk on the
-  drawn phone moves the monitor, and the phone's Back and the desktop's trail move
-  both. "Just pick one!" mid-walk and the phone's Back on a pick move both. A
-  menu or About closes in both by Escape, by a press beside it and by About's
-  Back, and About's Back moves the other screen nowhere. A frame reloaded
-  mid-walk brings both back together at the doors, with at most two reloads. At
-  full motion the screens keep step through a pick and "Not that one". A wheel
-  over a frame moves the deck. A flick that scrolls inside a frame, even to its
-  end, leaves the deck where it is.
+- **The conductor** (`tests/conductor.test.mjs`): a walk on the monitor moves
+  the drawn phone to the reveal, through "Not that one" and back to the start. A
+  walk on the drawn phone moves the monitor, and the phone's Back and the
+  desktop's trail move both. "Just pick one!" mid-walk and the phone's Back on a
+  pick move both. The profile menu opens and closes on both by Escape and a
+  press beside it, and its items move neither screen. A note's panel opens on
+  both, and its Save moves nothing. A screen reloaded mid-walk rejoins where the
+  other stands. At full motion both screens reach every reveal within 100 ms of
+  each other. A wheel over a frame moves the deck; a flick that scrolls a
+  phone's reveal, even to its end, leaves the deck where it is.
 - **The held deck** (`tests/deck-held.test.mjs`): in Firefox, which carries a
   frame's scroll-into-view out to the boxes around it, a walk to a pick on the
   monitor leaves the deck unscrolled.
 - **The phone's demo** (`tests/phone-demo.test.mjs`): a phone sees only the
-  drawn phone and "Try the demo", which opens Matinee full screen on the doors
+  drawn phone and "Try the demo", which opens the demo full screen on the doors
   question with the "Demo ✕" chip. Back returns to slide two. The chip closes
-  the demo even after Matinee's About opened inside it, and leaves the page's
+  the demo after a walk and an open menu inside it, and leaves the page's
   history as it stood.
 
 ## 9. Interfaces
 
-These are the shapes another program parses: the stand-in reads the canned
-files, the builder reads and writes the film list, and the page-copy test reads
-the commit record and the checksums. Matinee's page requests the pictures by
-path, and the builder reads `img/.made-with.json` back to decide whether to
+These are the shapes another program parses: the player reads the canned
+files, the builder reads and writes the film list and reads the synopses, and
+the page-copy test reads the commit record and the checksums. The player
+requests the pictures by path, and the builder reads `img/.made-with.json` back to decide whether to
 remake them.
 
 ### 9.1 The canned files
@@ -657,7 +629,7 @@ canned/film/<tmdb id>.json   Matinee's /api/film/<id> reply
 - `<tree>` is one of `comedy`, `horror`, `scifi`, `kids`, `nonfiction`.
 - An answers key joins each answer as `question:option`, with commas. The empty
   key `""` is the door's first step.
-  (`tools/build_demo.py::key`, `tools/api.js::keyOf`)
+  (`tools/build_demo.py::key`)
 - `<path>` is the door's subgenre answer as `question:option`, or `_` for a door
   that asks nothing. (`tools/build_demo.py::paths`)
 - These fields hold the same values on every build, except that `tmdb` and
@@ -692,7 +664,7 @@ img/.made-with.json                     {"quality": 72, "poster": {"xs": 100, "s
 {
   "exclude": [176],
   "reveal": {
-    "comedy/room:0": [105, 14160, 862],
+    "comedy/kind:0": [762, 813, 18785],
     "nonfiction/_": [1667, 158999, 1430]
   }
 }
@@ -703,14 +675,24 @@ its three TMDB ids, in film-id order, which is the order "Not that one" deals
 them. The builder writes `exclude` sorted and `reveal` for every path.
 (`tools/build_demo.py::main`, `tools/build_demo.py::choose_all`)
 
-### 9.4 `MATINEE_COMMIT` and `PAGE_FILES`
+### 9.4 `tools/synopses.json`
+
+```json
+{ "note": "…", "synopses": { "813": "A shell-shocked former pilot must land a passenger jet …" } }
+```
+
+`synopses` maps a TMDB id to the demo's own one-line synopsis of that film,
+written for the demo. The builder copies each revealed film's synopsis into its
+pick reply and stops on a revealed film without one.
+(`tools/build_demo.py::synopses`)
+
+### 9.5 `MATINEE_COMMIT` and `PAGE_FILES`
 
 `MATINEE_COMMIT` holds one line: the full 40-character hash of the Matinee
-commit the page copy came from.
+commit the borrowed files came from.
 
 `PAGE_FILES` holds one line per copied file: the file's SHA-256 checksum as
-that commit has it, two spaces, and its path in the site. The stand-in's path
-is listed with Matinee's checksum, not the stand-in's.
+that commit has it, two spaces, and its path in the site.
 
 ```text
 22954ac9be51ede5d4927389c362103ddbe366018aec2e3a93bf39dd3098f00f  static/avatars/3d-glasses-256.webp
@@ -720,30 +702,36 @@ is listed with Matinee's checksum, not the stand-in's.
 
 # Known limits
 
-As the code stood on 2026-10-07.
+As the code stood on 2026-10-08.
 
-1. **Safari is unmeasured.** The tests run in Chromium only. Whether Safari
-   paints a poster served with no extension, as `application/octet-stream` with
-   `nosniff`, has not been checked.
-2. **No synopsis on demo cards.** TMDB's terms forbid keeping its data longer
-   than six months, and a public repository's history keeps every committed file
-   for good, so no canned card carries TMDB's synopsis.
+1. **Safari is measured through WebKit, not on a device.** The suite runs in
+   Chromium and the held-deck test in Firefox. WebKit runs of the walk and the
+   conductor tests passed on 2026-10-08 (they found Safari passing a frame's
+   spent wheel to the page, now stopped); WebKit is not part of the gate, and no
+   test runs on an iPhone.
+2. **Synopses are the demo's own.** TMDB's terms forbid keeping its data
+   longer than six months, and a public repository's history keeps every
+   committed file for good, so the demo shows synopses written for it, not
+   TMDB's.
 3. **The canned walk is a snapshot.** It records the library, the shipped
    labels, Matinee's trees and Matinee's lines as they stood when the builder
    ran. A later change to any of them reaches the site only through a rebuild.
-   The page copy is likewise one Matinee commit. Nothing checks that the canned
-   files were built from the commit in `MATINEE_COMMIT`.
+   The borrowed files are likewise one Matinee commit. Nothing checks that the
+   canned files were built from the commit in `MATINEE_COMMIT`.
 4. **The commit half of the page-copy check needs a Matinee checkout.** Without
    one, the test checks the copy against `PAGE_FILES` only.
 5. **The leak check runs only beside its own checkout.** On a machine without
    it, the hook runs `./check.sh` alone. The builder's refusals (section 6.5)
    and the canned-file test still run everywhere.
 6. **"Roll again" is checked in the site's own words only**: `index.html` and
-   `README.md`. Matinee's page copy and the canned replies carry Matinee's own
-   text.
-7. **The demo keeps nothing.** A changed avatar, a deleted profile and a note
-   are answered and forgotten. A reload starts at the doors.
-8. **Two live frames on a modest laptop are unmeasured.** No test measures how
+   `README.md`. The canned replies carry Matinee's own text.
+7. **The demo keeps nothing.** The profile menu's items and a note's Save do
+   nothing. A screen reloaded on its own rejoins the others; a whole page
+   reloaded starts at the doors.
+8. **The wall is a representation.** A new pool fades in over the old where
+   Matinee's posters slide to their new places, and the hunt's first hop runs
+   at its table's time where Matinee would slow a long hop down.
+9. **Two live frames on a modest laptop are unmeasured.** No test measures how
    smoothly the monitor and the phone run together on slow hardware.
 
 ---
@@ -757,11 +745,11 @@ was verified against the source on 2026-10-07. Search by the symbol.
 
 | Handle | What it guarantees |
 |---|---|
-| `site/deck.js::deck` | The deck over the slides: wheel, finger, keys and bulbs; one flick moves one slide; `busy()` hands the input to an overlay; `arrived()` runs on each move |
+| `site/deck.js::deck` | The deck over the slides: wheel, finger, keys and bulbs; one flick moves one slide; `busy()` hands the input to an overlay |
 | `site/deck.js::place` | Where a slide stands for a deck position: rising, sinking and fading, or crossfading under reduced motion |
 | `site/deck.js::scrollsInside` | A slide overflowing by more than 8 px scrolls inside itself before the deck moves |
 | `site/deck.js::deck` → `keyTarget` | The slide a key moves to, or none |
-| `site/deck.js::QUIET_MS` | 200 ms of quiet ends a gesture; the mirror shares it for a wheel over a frame |
+| `site/deck.js::QUIET_MS` | 200 ms of quiet ends a gesture; the conductor shares it for a wheel over a frame |
 
 ### The slides and the About
 
@@ -771,31 +759,33 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `site/site.css` | The curtain, the slides' layout and fit, the drawn monitor and phone, the poster cases, the ticket, the scrim, the phone layout at 600 px, reduced motion, and the frames' fade |
 | `site/site.css::.handset .demo-frame` | On a phone the drawn phone is a preview that takes no input |
 | `site/site.css::.demo-chip` | The "Demo ✕" chip at the top centre, clear of Matinee's bar |
-| `site/site.js::marquee` | Lays Matinee's wide and narrow marquee drawings into slide one from the page copy |
-| `site/site.js::typeLine` | Types a line once, gold then cream, at two characters every 24 ms, holding its shape, with no caret |
+| `site/site.js::marquee` | Lays Matinee's wide and narrow marquee drawings into slide one from the borrowed files |
 | `site/site.js::overlay` | An overlay is a history step: Back closes it, and its own close steps back over every step since it opened |
 | `site/site.js::openDemo` | Makes the full-screen frame on first open, keeps it, and opens the overlay |
-| `site/site.js::mountDesk` | The monitor's frame on a wide screen, or once when the window widens, joined to the phone by the mirror |
+| `site/site.js::mountDesk` | The monitor's frame on a wide screen, or once when the window widens; it joins where the phone stands |
 
 ### The demo
 
 | Handle | What it guarantees |
 |---|---|
-| `tools/copy_page.sh` | Copies Matinee's page from one commit, records `PAGE_FILES` before placing the stand-in, and writes `MATINEE_COMMIT` |
-| `tools/api.js` (copied to `static/js/api.js`) | The stand-in: Matinee's four helpers, answered from the canned files |
-| `tools/api.js::canned` | Reads a canned file once; forgets a failed read so it is tried again |
-| `tools/api.js::dealFrom` | The paths a pick deals from: the path, the door's paths, or every path |
-| `tools/api.js::pick` | The film at the count of films seen, modulo the deal: cycles without end |
-| `tools/api.js::walk` | A walk step by its answers key |
-| `tools/api.js::get` / `post` / `put` / `del` (exported through `call`) | Answers every route the page calls; an unknown `get` or `post` route answers 404; a failed read answers 500 with a warning |
-| `tools/api.js::sequence` / `placeOf` | Matinee's quip draws come from one fixed sequence, and its hunt plans from one restarted at each pick by the pick's place in the walk, the same in every frame; every other `Math.random` stays native |
-| `site/demo.js::mountDemo` | A frame of `/demo/` at a screen's size, scaled to its glass, resolving once a visitor can use it |
-| `site/demo.js::keepPastDoor` | Presses the Guest tile while the frame is hidden whenever the front door stands; shows the frame at the doors |
-| `site/demo.js::guestTile` / `atDoors` | The front door's Guest tile when pressable; whether the doors question stands |
-| `site/mirror.js::mirror` | Replays each frame's presses, Escape, presses beside a control and history steps in the other, in order; `resync` reloads every frame together |
-| `site/mirror.js::signature` / `sameKind` / `counterpart` | Finds a control's twin by tag and classes, words and index; a phone pick's Back falls back to the last way back on the trail |
-| `site/mirror.js::replay` | Waits up to 4 s for the twin, then reports failure |
-| `site/mirror.js::scrollsHere` | Whether a wheel over a frame scrolls something inside it |
+| `tools/copy_page.sh` | Copies the stylesheet, assets and seven page modules from one Matinee commit, records `PAGE_FILES`, and writes `MATINEE_COMMIT` |
+| `demo/index.html` | The demo's page: Matinee's stylesheet, the wall and stage it dresses, and the player |
+| `site/demo.js::mountDemo` | A frame of `/demo/` at a screen's size, scaled to its glass |
+| `site/player.js::load` / `canned` | Reads the boot replies, the first screen, the picks and every walk from `/canned/` |
+| `site/player.js::press` / `run` / `lockStage` | A press locks the screen and goes to the conductor (or plays at once alone); `run` plays each step, `still` for a late joiner |
+| `site/player.js::say` / `quip` | Matinee's typing; a quip from the genre's set or universal, the same for the same place in the walk |
+| `site/player.js::doors` / `openDoor` / `ask` | The doors question with the guest's greeting; a genre's opening line and subgenre question |
+| `site/player.js::pick` / `nextState` / `goldLine` / `paths` | A pick: the gold line, 1 s read, the hunt, the reveal line, the beat, the rest; "Not that one" draws the next film |
+| `site/player.js::rest` / `settle` / `choices` | The resting page in Matinee's markup with the demo's synopsis; the poster carried to its slot; the actions |
+| `site/player.js::nameTag` / `showMenu` / `noteLink` / `showNote` | The profile menu and note panel, shown and doing nothing |
+| `site/player.js::trail` / `wayBack` / `back` | The desktop's trail, the phone's way back, and where Back leads |
+| `site/player-wall.js::DemoWall.show` / `draw` | The wall laid out by Matinee's grid rules, at resting size after the last answer; a new pool fades in |
+| `site/player-wall.js::huntPlan` / `DemoWall.hunt` | Hops, times and pauses from a seed and Matinee's hop table; the screen gives only the first hop's reach |
+| `site/player-wall.js::DemoWall.grow` / `glowAt` / `endPick` | The landed poster grows 2.4 times in its glow while the wall dims; a pick's end restores the wall |
+| `site/player-wall.js::sequence` / `seedOf` | Numbers and seeds the same in every screen |
+| `site/conductor.js::conductor` | Hands each press to every player 120 ms ahead; a late joiner replays the presses since "Start over" |
+| `site/conductor.js::forwardWheel` | A wheel over a frame moves the deck unless it scrolls inside the frame |
+| `site/scrolls.js::scrollsHere` | Whether a wheel scrolls something inside its own document; shared by the conductor and the player, which stops any wheel that does not |
 
 ### The canned-walk builder
 
@@ -827,16 +817,15 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `check.sh` | ESLint, then every test file in turn, within 600 s |
 | `bootstrap.sh` | Installs the development tools and Chromium, and points git at `.githooks/` |
 | `.githooks/pre-commit` | The leak check where its checkout stands beside the site, then `./check.sh` |
-| `eslint.config.js` | Matinee's lint rules over the site's scripts, the stand-in and the tests |
+| `eslint.config.js` | Matinee's lint rules over the site's scripts and the tests |
 | `tests/serve.mjs::serve` | A static server that answers as GitHub Pages does |
 | `tests/deck.test.mjs` | The deck's gestures, judged by where the slides stand |
 | `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again" |
-| `tests/page-copy.test.mjs` | The copy against `PAGE_FILES`, and against the commit where a checkout is at hand |
-| `tests/stand-in.test.mjs` | Every walk key, the cycle, the boot replies, failures and the retry |
+| `tests/page-copy.test.mjs` | The borrowed files against `PAGE_FILES`, and against the commit where a checkout is at hand |
 | `tests/canned.test.mjs` | The canned files' completeness, path membership, links, picture source, pictures and privacy |
 | `tests/demo-walk.test.mjs` | Every path walked to a pick and round its films, on a desktop and a phone |
-| `tests/frames.test.mjs` | No front door ever visible in a frame; the late monitor |
-| `tests/mirror.test.mjs` | Both screens keep step through walks, picks, menus, About, reloads and the wheel |
+| `tests/frames.test.mjs` | Both screens open on the doors; the profile menu's items do nothing; the late monitor |
+| `tests/conductor.test.mjs` | Both screens play every press together, reveal within 100 ms of each other, rejoin after a reload, and pass the wheel |
 | `tests/deck-held.test.mjs` | A walk to a pick inside a frame leaves the deck where it stands, in Firefox |
 | `tests/phone-demo.test.mjs` | The phone's full-screen demo, its chip and Back |
 | `.nojekyll` | Pages serves the files as they stand |

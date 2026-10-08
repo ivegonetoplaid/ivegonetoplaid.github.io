@@ -1,13 +1,8 @@
-// The site's page: the deck over the curtain, Matinee's marquee on the first slide, the lines typing as their
-// slides arrive, and About over everything.
+// The site's page: the deck over the curtain, Matinee's marquee on the first slide, and About over everything.
 import { deck } from "./deck.js";
+import { conductor } from "./conductor.js";
 import { mountDemo } from "./demo.js";
-import { mirror } from "./mirror.js";
 
-const CHARS_PER_TICK = 2; // Matinee's own pace: two characters every 24 ms
-const TICK_MS = 24;
-const TYPE_DELAY_MS = 260; // a line starts once its slide is mostly in place
-const still = matchMedia("(prefers-reduced-motion: reduce)");
 
 // The marquee: Matinee's own drawing, wide and narrow, laid into the page so its bulbs chase; the stylesheet
 // shows one. Its letter board already reads "Now showing" over "Whatever you're in the mood for".
@@ -24,43 +19,6 @@ async function marquee() {
     frame.append(svg);
     holder.append(frame);
   }
-}
-
-// Types `line` once, gold then cream, at Matinee's pace and with no caret. The untyped rest stands in place,
-// unseen, so the line holds its final shape while it types. Under reduced motion it appears whole.
-function typeLine(line) {
-  if (line.dataset.typed) return;
-  line.dataset.typed = "1";
-  const parts = [...line.querySelectorAll(".ack, .ask")].filter((el) => el.getClientRects().length);
-  const texts = parts.map((el) => el.textContent);
-  line.setAttribute("aria-label", texts.join(" "));
-  const views = parts.map((el, i) => {
-    const typed = document.createElement("span");
-    const rest = document.createElement("span");
-    rest.className = "rest";
-    rest.textContent = texts[i];
-    el.replaceChildren(typed, rest);
-    el.setAttribute("aria-hidden", "true");
-    return { typed, rest, text: texts[i] };
-  });
-  const total = texts.join("").length;
-  let n = still.matches ? total : 0;
-  const paint = () => {
-    let left = n;
-    for (const v of views) {
-      const k = Math.max(0, Math.min(v.text.length, left));
-      v.typed.textContent = v.text.slice(0, k);
-      v.rest.textContent = v.text.slice(k);
-      left -= v.text.length;
-    }
-  };
-  paint();
-  if (n >= total) return;
-  const timer = setInterval(() => {
-    n = Math.min(total, n + CHARS_PER_TICK);
-    paint();
-    if (n >= total) clearInterval(timer);
-  }, TICK_MS);
 }
 
 // An overlay (About, the phone's demo) opens as a history step, so the browser's Back closes it; while open it
@@ -115,14 +73,10 @@ addEventListener("keydown", (e) => {
   else if (about.isOpen()) about.back();
 });
 
-const slides = [...document.querySelectorAll(".slide")];
 deck({
-  slides,
+  slides: [...document.querySelectorAll(".slide")],
   dots: [...document.querySelectorAll(".dots button")],
   busy: () => about.isOpen() || demo.isOpen(),
-  arrived: (k) => {
-    for (const line of slides[k].querySelectorAll(".line")) setTimeout(() => typeLine(line), still.matches ? 0 : TYPE_DELAY_MS);
-  },
 });
 marquee().catch((err) => console.warn("The marquee drawing could not be loaded.", err));
 
@@ -132,17 +86,12 @@ function wideScreen() {
   return wide.matches;
 }
 const STATUS_BAR = 58; // the drawn phone's status bar, in the phone's own pixels
-const phone = mountDemo(document.getElementById("phone-glass"), { width: 390, height: 844 - STATUS_BAR, top: STATUS_BAR, title: "Matinee on a phone" });
-// A window that widens past a phone's width gets its monitor's demo then, once; the phone, which may have walked
-// on meanwhile, starts again with it.
-function mountDesk(late) {
-  wide.removeEventListener("change", widened);
-  const desk = mountDemo(document.getElementById("desk-glass"), { width: 1680, height: 1050, title: "Matinee on a desktop" });
-  Promise.all([phone, desk]).then((frames) => {
-    const joined = mirror(frames);
-    if (late) joined.resync();
-  });
+window.demoConductor = conductor(); // every screen's player finds it here before its first press
+mountDemo(document.getElementById("phone-glass"), { width: 390, height: 844 - STATUS_BAR, top: STATUS_BAR, title: "Matinee on a phone" });
+// A window that widens past a phone's width gets its monitor's demo then, once; it joins where the phone stands.
+function mountDesk() {
+  wide.removeEventListener("change", mountDesk);
+  mountDemo(document.getElementById("desk-glass"), { width: 1680, height: 1050, title: "Matinee on a desktop" });
 }
-const widened = () => mountDesk(true);
-if (wide.matches) mountDesk(false);
-else wide.addEventListener("change", widened);
+if (wide.matches) mountDesk();
+else wide.addEventListener("change", mountDesk);

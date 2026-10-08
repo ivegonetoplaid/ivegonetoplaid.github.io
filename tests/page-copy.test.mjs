@@ -1,6 +1,6 @@
-// The demo runs Matinee's own page: every copied page file is byte for byte as the commit in MATINEE_COMMIT has
-// it, except static/js/api.js, the site's stand-in. Where a Matinee checkout is at hand (MATINEE_CHECKOUT, or a
-// sibling `matinee` folder), the checksums themselves are checked against that commit.
+// The site borrows Matinee's stylesheet, fonts, pictures and a few page modules: every copied file is byte for byte
+// as the commit in MATINEE_COMMIT has it. Where a Matinee checkout is at hand (MATINEE_CHECKOUT, or a sibling
+// `matinee` folder), the checksums themselves are checked against that commit.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -25,18 +25,17 @@ function filesUnder(dir) {
   });
 }
 
-test("every copied page file is as Matinee's commit has it, except the stand-in api.js", () => {
-  const present = [...filesUnder("static"), "demo/index.html"];
-  assert.deepEqual(present.sort(), [...listed.keys()].sort(), "the copy holds exactly the page's files");
+test("every copied file is as Matinee's commit has it", () => {
+  const present = filesUnder("static");
+  assert.deepEqual(present.sort(), [...listed.keys()].sort(), "the copy holds exactly the listed files");
   const changed = present.filter((f) => sha(readFileSync(join(ROOT, f))) !== listed.get(f));
-  assert.deepEqual(changed, ["static/js/api.js"]);
-  assert.equal(readFileSync(join(ROOT, "static/js/api.js"), "utf8"), readFileSync(join(ROOT, "tools/api.js"), "utf8"));
+  assert.deepEqual(changed, []);
 });
 
 const checkout = process.env.MATINEE_CHECKOUT || join(ROOT, "../matinee");
 test("the checksums are those of the recorded Matinee commit", { skip: !existsSync(join(checkout, ".git")) && "no Matinee checkout" }, () => {
   for (const [file, hash] of listed) {
-    const inRepo = file === "demo/index.html" ? "index.html" : file.slice("static/".length);
+    const inRepo = file.slice("static/".length);
     const bytes = execFileSync("git", ["-C", checkout, "show", `${commit}:src/matinee/web/static/${inRepo}`], { maxBuffer: 1 << 26 });
     assert.equal(sha(bytes), hash, file);
   }

@@ -1,5 +1,5 @@
 // ESLint for the site's own scripts, under Matinee's coding standards: no nested ternaries, a cyclomatic limit
-// of 10, and nodes built with textContent, never innerHTML. The copy of Matinee's page under static/ is
+// of 10, and nodes built with textContent, never innerHTML. The files copied from Matinee under static/ are
 // Matinee's own and linted there.
 import js from "@eslint/js";
 import globals from "globals";
@@ -18,10 +18,10 @@ const rules = {
 };
 
 export default [
-  { ignores: ["static/**", "!static/js/", "!static/js/api.js", "demo/**"] },
+  { ignores: ["static/**", "demo/**"] },
   js.configs.recommended,
   {
-    files: ["site/**/*.js", "static/js/api.js", "tools/api.js"],
+    files: ["site/**/*.js"],
     languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: globals.browser },
     rules,
   },

@@ -1,6 +1,6 @@
 // A phone visitor: the demo slide shows only the drawn phone and "Try the demo"; a tap opens Matinee full screen
 // on the doors question, with the site's chip "Demo ✕" over it. The phone's Back closes it, and the chip closes it
-// whatever history steps the demo took (Matinee's About inside it), leaving the visitor on the slide.
+// whatever the demo was doing (a walk, an open menu), leaving the visitor on the slide.
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { chromium } from "playwright";
@@ -71,15 +71,16 @@ test("a phone sees only the drawn phone and Try the demo, which opens Matinee fu
   await context.close();
 });
 
-test("the chip closes the demo even after Matinee's About opened inside it, and leaves the page's history as it was", { timeout: 120000 }, async () => {
+test("the chip closes the demo after a walk and an open menu inside it, and leaves the page's history as it was", { timeout: 120000 }, async () => {
   const { page, context, trouble } = await open();
   const before = await page.evaluate(() => history.length);
   await page.locator(".handset").tap();
   await fullLive(page);
   const frame = await fullFrame(page);
+  await frame.getByRole("button", { name: /^horror$/i }).click();
+  await frame.locator(".answers:not([hidden]) .letterbox").first().waitFor();
   await frame.locator(".viewer-button").click();
-  await frame.getByRole("menuitem", { name: /about/i }).click();
-  await frame.locator(".about").waitFor();
+  await frame.locator(".viewer-menu:not([hidden])").waitFor();
   await page.click("#close-demo");
   await page.waitForFunction(() => document.getElementById("demo").hidden);
   await page.waitForTimeout(500);

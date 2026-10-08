@@ -1,8 +1,8 @@
-// A headless walk of every canned path on a phone and a desktop, through Matinee's real page served from the
-// site: past the front door as the site's demo goes, into each door, down each subgenre answer to the pick (and
-// the first answer of any question after it), "Not that one" round the path's three films and back to the
-// first, then "Start over". It fails on a problem screen, a page error or an unhandled rejection, a step whose
-// next screen does not appear in time, and any request to an origin other than the site's own.
+// A headless walk of every demo path on a phone and a desktop, through the demo's player served from the site:
+// from the doors question into each genre, down each subgenre answer to the reveal, "Not that one" round the
+// path's three films and back to the first, then "Start over". It fails on a page error or an unhandled
+// rejection, a step whose next screen does not appear in time, a desktop screen that scrolls inside itself, and
+// any request to an origin other than the site's own.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { after, before, test } from "node:test";
@@ -55,7 +55,6 @@ async function open(viewport) {
     addEventListener("unhandledrejection", (e) => console.error(`unhandled rejection: ${e.reason}`));
   });
   await page.goto(`${site.origin}/demo/`);
-  await page.locator(".seats .seat:not(.new)").click({ timeout: STEP_MS });
   await atDoors(page);
   return { page, context, trouble };
 }

@@ -1,7 +1,7 @@
-// The site's demo frames: on the second slide both screens stand on the doors question, and a visitor never
-// sees Matinee's front door in either, whatever they press (Change avatar, Switch profiles, Delete profile) and
-// even after a frame reloads. Each frame keeps to /demo/, nothing leaves the site, and a window that widens past
-// a phone's width gets its monitor's demo.
+// The site's demo frames: on the second slide both screens stand on the doors question, greeting the guest, and
+// the profile menu's items (Change avatar, Switch profiles, Delete profile, About Matinee) do nothing but close
+// it. Each frame keeps to /demo/, nothing leaves the site, and a window that widens past a phone's width gets its
+// monitor's demo.
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { chromium } from "playwright";
@@ -39,28 +39,13 @@ async function open(viewport) {
   return { page, context, trouble };
 }
 
-// Records every moment a frame can be seen while its page stands on the front door.
-const watchForDoor = (page) =>
-  page.evaluate(() => {
-    window.__doorSeen = [];
-    const look = () => {
-      for (const frame of document.querySelectorAll("iframe.demo-frame")) {
-        const doc = frame.contentDocument;
-        const atDoor = doc?.getElementById("stage")?.classList.contains("at-door") || doc?.querySelector(".seats");
-        if (atDoor && Number(getComputedStyle(frame).opacity) > 0.02) window.__doorSeen.push(frame.title);
-      }
-      requestAnimationFrame(look);
-    };
-    look();
-  });
-
 // The frame titled `title` stands live on its doors question, at /demo/.
 async function atDoors(page, title) {
   await page.waitForFunction(
     (t) => {
       const frame = document.querySelector(`iframe[title="${t}"]`);
       const doc = frame?.contentDocument;
-      return frame?.classList.contains("live") && doc?.querySelector(".answers.many .letterbox") && !doc.getElementById("stage").classList.contains("at-door");
+      return frame?.classList.contains("live") && doc?.querySelector(".answers.many:not([hidden]) .letterbox");
     },
     title,
     { timeout: STEP_MS },
@@ -81,28 +66,20 @@ async function fromMenu(frame, item) {
   await frame.getByRole("menuitem", { name: item }).click({ timeout: STEP_MS });
 }
 
-test("both screens open on the doors question, and the front door never shows in either", { timeout: 300000 }, async () => {
+test("both screens open on the doors question, and the profile menu's items leave them there", { timeout: 300000 }, async () => {
   const { page, context, trouble } = await open({ width: 1440, height: 900 });
   await page.keyboard.press("ArrowDown");
   await atDoors(page, DESK);
   await atDoors(page, PHONE);
-  await watchForDoor(page);
   for (const title of [DESK, PHONE]) {
-    let frame = await frameNamed(page, title);
-    await fromMenu(frame, "Change avatar");
-    await frame.locator(".avatar-choice").first().click({ timeout: STEP_MS });
-    await page.keyboard.press("Escape");
-    await fromMenu(frame, "Switch profiles");
-    await atDoors(page, title);
-    frame = await frameNamed(page, title);
-    await fromMenu(frame, "Delete profile");
-    await frame.getByRole("button", { name: /yes, delete it/i }).click({ timeout: STEP_MS });
-    await atDoors(page, title);
-    frame = await frameNamed(page, title);
-    await frame.evaluate(() => location.reload());
-    await atDoors(page, title);
+    const frame = await frameNamed(page, title);
+    for (const item of ["Change avatar", "Switch profiles", "Delete profile", "About Matinee"]) {
+      await fromMenu(frame, item);
+      await atDoors(page, title);
+      await frame.locator(".viewer-menu").waitFor({ state: "hidden", timeout: STEP_MS }); // the item closes the menu
+    }
+    assert.match(await frame.locator(".line").textContent(), /right this way, guest/i);
   }
-  assert.deepEqual(await page.evaluate(() => window.__doorSeen), [], "the front door showed in a frame");
   assert.deepEqual(trouble, []);
   await context.close();
 });

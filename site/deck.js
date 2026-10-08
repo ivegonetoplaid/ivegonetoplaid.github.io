@@ -48,8 +48,8 @@ function scrollsInside(slide, dy) {
 }
 
 // Builds the deck over `slides`, marked by `dots`. `busy()` is true while an overlay (About, the phone's demo)
-// takes the input. `arrived(index)` runs each time a slide is moved to.
-export function deck({ slides, dots, busy = () => false, arrived = () => {} }) {
+// takes the input.
+export function deck({ slides, dots, busy = () => false }) {
   const still = matchMedia("(prefers-reduced-motion: reduce)");
   let index = 0;
   let pos = 0;
@@ -88,7 +88,6 @@ export function deck({ slides, dots, busy = () => false, arrived = () => {} }) {
     dots.forEach((d, j) => d.setAttribute("aria-current", String(j === index)));
     document.body.dataset.slide = String(index);
     glide(index, still.matches ? STILL_MS : SETTLE_MS);
-    arrived(index);
   };
 
   // A wheel gesture: it builds a pull until it commits or input goes quiet; once committed, the rest of the
