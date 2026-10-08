@@ -197,19 +197,7 @@ test("a screen reloaded mid-walk rejoins where the other stands", { timeout: 300
   await context.close();
 });
 
-test("at full motion the screens keep step through a pick and Not that one", { timeout: 300000 }, async () => {
-  const { context, trouble, desk, phone } = await open({ motion: "no-preference" });
-  await named(desk, "For the kids").click();
-  let now = await same(desk, phone, (s) => s.answers.length > 0 && !s.answers.includes("Comedy"));
-  await named(phone, now.answers[0]).click();
-  now = await same(desk, phone, (s) => s.film !== null);
-  await desk.getByRole("button", { name: "Not that one" }).click();
-  await same(desk, phone, (s) => s.film !== null && s.film !== now.film);
-  assert.deepEqual(trouble, []);
-  await context.close();
-});
-
-test("at full motion both screens reach every reveal within 100 ms of each other", { timeout: 300000 }, async () => {
+test("at full motion both screens reach every reveal within 100 ms of each other, on the same film", { timeout: 300000 }, async () => {
   const { context, trouble, desk, phone } = await open({ motion: "no-preference" });
   const watch = (f) =>
     f.evaluate(() => {
@@ -236,6 +224,7 @@ test("at full motion both screens reach every reveal within 100 ms of each other
   const [a, b] = [await desk.evaluate(() => window.__reveals), await phone.evaluate(() => window.__reveals)];
   const gaps = a.slice(0, 3).map((t, k) => Math.abs(t - b[k]));
   assert.ok(gaps.every((g) => g <= 100), `the screens revealed ${gaps.join(", ")} ms apart`);
+  await same(desk, phone, (st) => st.film !== null); // and they landed on the same film
   assert.deepEqual(trouble, []);
   await context.close();
 });

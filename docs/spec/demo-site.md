@@ -523,7 +523,9 @@ Playwright version drives, and points git at the committed hook in `.githooks/`.
 itself needs nothing installed.
 
 **The gate.** `./check.sh` runs ESLint over the site's own scripts and the
-tests. It then runs every test file, one at a time, within 600 s. The tests that
+tests. It then runs every test file, one at a time, within 600 s, and prints its
+total time and its five slowest tests. Its budget is 180 s; over it, it warns
+(it does not fail), and the cure is cutting duplicated tests. The tests that
 drive a page drive it in a headless Chromium. The lint rules forbid nested ternaries,
 cyclomatic complexity over 10, `var`, loose equality, and assigning
 `innerHTML` or `outerHTML`. The files copied from Matinee are Matinee's own and
@@ -602,7 +604,7 @@ being true.
   page and moves nothing. A note's panel opens on both, and its Save moves
   nothing. A screen reloaded mid-walk rejoins where the
   other stands. At full motion both screens reach every reveal within 100 ms of
-  each other. A wheel over a frame moves the deck; a flick that scrolls a
+  each other, on the same film. A wheel over a frame moves the deck; a flick that scrolls a
   phone's reveal, even to its end, leaves the deck where it is.
 - **The held deck** (`tests/deck-held.test.mjs`): in Firefox, which carries a
   frame's scroll-into-view out to the boxes around it, a walk to a pick on the
