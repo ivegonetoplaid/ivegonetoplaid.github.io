@@ -150,3 +150,50 @@ test("the corner mark inside the demo starts over in place and never loads the s
   assert.deepEqual(trouble, []);
   await context.close();
 });
+
+test("the demo fetches every canned file the site carries, and no other", async () => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" });
+  const page = await context.newPage();
+  const fetched = new Set();
+  page.on("request", (r) => {
+    const path = new URL(r.url()).pathname;
+    if (path.startsWith("/canned/")) fetched.add(path.slice("/canned/".length));
+  });
+  await page.goto(`${site.origin}/demo/`);
+  await atDoors(page);
+  const carried = ["boot.json", "first.json", "picks.json", ...readdirSync(`${ROOT}canned/walk`).map((f) => `walk/${f}`)];
+  assert.deepEqual([...fetched].sort(), carried.sort());
+  await context.close();
+});
+
+test("a canned file that does not arrive leaves both screens saying so", async () => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+  const page = await context.newPage();
+  await page.route("**/canned/walk/scifi.json", (route) => route.abort());
+  await page.goto(`${site.origin}/`);
+  for (const frame of ["#desk-glass iframe", "#phone-glass iframe"]) {
+    // Slide two stands off screen, so the frames count as hidden: attached is what can be waited on.
+    await page.locator(`${frame}.live`).waitFor({ state: "attached", timeout: STEP_MS });
+    await page.frameLocator(frame).getByText("The demo didn't load.").waitFor({ state: "attached", timeout: STEP_MS });
+  }
+  await context.close();
+});
+
+test("a hunt left by the trail stops: the doors wall only drifts", { timeout: 60000 }, async () => {
+  const context = await browser.newContext({ viewport: { width: 1680, height: 1050 }, reducedMotion: "no-preference" });
+  const page = await context.newPage();
+  await page.goto(`${site.origin}/demo/`);
+  await press(page, named(page, first.options[0].say));
+  const answers = page.locator(".answers:not([hidden]) .letterbox");
+  await answers.first().click({ timeout: STEP_MS });
+  await page.waitForTimeout(2200); // the gold line has typed and its read has passed: the hunt is under way
+  await page.locator("button.crumb").first().click({ timeout: STEP_MS });
+  await page.waitForTimeout(300);
+  const at = () => page.evaluate(() => [...document.querySelectorAll(".wall-tiles")].at(-1).style.transform.match(/-?[\d.]+/g).map(Number));
+  const [x0, y0] = await at();
+  await page.waitForTimeout(2000);
+  const [x1, y1] = await at();
+  assert.equal(x1, x0, "the wall moved sideways after the hunt was left");
+  assert.ok(Math.abs(y1 - y0) <= 25, `the wall moved ${Math.abs(y1 - y0)} px down in 2 s; a drift moves 20`);
+  await context.close();
+});

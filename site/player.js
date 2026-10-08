@@ -37,8 +37,8 @@ async function canned(name) {
 
 async function load() {
   const [boot, first, picks] = await Promise.all([canned("boot.json"), canned("first.json"), canned("picks.json")]);
-  const walks = {};
-  for (const o of first.options) walks[o.tree] = await canned(`walk/${o.tree}.json`);
+  const trees = first.options.map((o) => o.tree);
+  const walks = Object.fromEntries(await Promise.all(trees.map(async (tree) => [tree, await canned(`walk/${tree}.json`)])));
   return { boot, first, picks, walks };
 }
 
@@ -341,6 +341,12 @@ function settle(film, left, still) {
   const width = height / POSTER_RATIO;
   const poster = h("img", { class: "slot-poster", src: posterUrl(film.tmdb, "l"), alt: `${film.title} poster` });
   Object.assign(poster.style, { width: `${width}px`, height: `${height}px`, boxShadow: `${wall.glowAt(width)}, 0 24px 60px rgba(0, 0, 0, 0.6)` });
+  // A screen that replays reaches here before the grown poster's colour is read, so the poster reads its own.
+  const lit = () => {
+    wall.glow(poster, width);
+    poster.style.boxShadow = `${wall.glowAt(width)}, 0 24px 60px rgba(0, 0, 0, 0.6)`;
+  };
+  poster.decode().then(lit, lit);
   slot.append(poster);
   wall.dropFront();
   const to = poster.getBoundingClientRect();
@@ -408,6 +414,15 @@ window.matineeDemo = {
   },
 };
 
-data = await load();
-if (conductor) conductor.join(window);
-else doors(false);
+// A demo whose canned files did not arrive says so on its screen, and stays out of the conductor's script.
+try {
+  data = await load();
+} catch (err) {
+  console.warn("The demo's canned files could not be loaded.", err);
+  const line = h("h1", { class: "line" });
+  clear(stage).append(h("section", { class: "talk" }, line));
+  say(line, "The demo didn't load.", "Reload the page to try again.", { still: true });
+  conductor?.show(window);
+}
+if (data && conductor) conductor.join(window);
+else if (data) doors(false);

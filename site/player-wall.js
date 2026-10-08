@@ -38,11 +38,13 @@ export function seedOf(text) {
   return n;
 }
 
-// Resolves after `ms`, calling `step(t)` each frame with t from 0 to 1.
-function tween(ms, step) {
+// Resolves after `ms`, calling `step(t)` each frame with t from 0 to 1; resolves early, without stepping, once
+// `live()` turns false.
+function tween(ms, step, live = () => true) {
   return new Promise((resolve) => {
     const start = performance.now();
     const tick = (now) => {
+      if (!live()) return resolve();
       const t = ms > 0 ? Math.min(1, (now - start) / ms) : 1;
       step(t);
       if (t < 1) requestAnimationFrame(tick);
@@ -96,6 +98,7 @@ export class DemoWall {
     this.drifting = true;
     this.front = null; // the landed poster, grown over the wall
     this.landing = null;
+    this.hunts = 0; // each hunt's number; a hunt stops once a newer one starts or its pick ends
     this.last = performance.now();
     requestAnimationFrame((now) => this.frame(now));
   }
@@ -189,8 +192,10 @@ export class DemoWall {
 
   // The hunt for film `id`, on rails from `seed`: the drift stops, the wall eases to the next whole row, and
   // each hop runs its planned time and pause. Resolves to the last hop's pause, in seconds. Under reduced
-  // motion, or `still`, the camera stands at the landing at once.
+  // motion, or `still`, the camera stands at the landing at once. A hunt left behind stops where it stands.
   async hunt(id, seed, { lift = 0, still = false } = {}) {
+    const mine = ++this.hunts;
+    const live = () => mine === this.hunts;
     const L = this.layout;
     this.drifting = false;
     this.lift = lift;
@@ -208,13 +213,14 @@ export class DemoWall {
     await tween(SETTLE_S * 1000, (t) => {
       const e = SETTLE_EASE(t);
       this.cam = { x: start.x + (end.x - start.x) * e, y: start.y + (end.y - start.y) * e };
-    });
+    }, live);
     let cell = from;
     for (const [k, hop] of plan.hops.entries()) {
       const at = cell;
-      await tween(hop.seconds * 1000, (t) => this.aim(hopCell(at, hop, t)));
+      await tween(hop.seconds * 1000, (t) => this.aim(hopCell(at, hop, t)), live);
       cell = hop.to;
       if (k < plan.hops.length - 1) await pause(hop.pause);
+      if (!live()) return 0;
     }
     return plan.hops.at(-1).pause;
   }
@@ -276,6 +282,7 @@ export class DemoWall {
 
   // Ends a pick: the landed poster goes, the wall comes back to strength and drifts again.
   endPick() {
+    this.hunts += 1;
     this.front?.remove();
     this.front = null;
     this.landing = null;

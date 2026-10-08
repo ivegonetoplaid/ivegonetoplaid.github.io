@@ -71,7 +71,7 @@ OLDEST = 1960  # a revealed film is from this year or later
 # The eras a path's three films are spread across, one each where the era has a film: (first year, last year).
 ERAS = ((OLDEST, 1999), (2000, 2011), (2012, 9999))
 QUALITY = 72
-TMDB_FILM = "https://www.themoviedb.org/movie"
+PER_PATH = 3  # the films each path reveals
 
 
 @dataclass(frozen=True)
@@ -277,13 +277,14 @@ def choose(tree: str, pool: list[int], need: int, taken: set[int], can: Revealab
 
 
 def card(c: TestClient, tmdb: int) -> dict[str, Any]:
-    """A film card as the demo serves it: linked to TMDB, with no synopsis and no TMDB picture path."""
+    """A film's id, title and year, as Matinee's film card names them."""
     got = ok(c.get(f"/api/film/{tmdb}"))
-    return {**got, "synopsis": None, "link": f"{TMDB_FILM}/{tmdb}", "link_to": "tmdb", "backdrop_path": None}
+    return {"tmdb": got["tmdb"], "title": got["title"], "year": got["year"]}
 
 
-def pick(template: dict[str, Any], film: dict[str, Any], synopsis: str) -> dict[str, Any]:
-    return {**template, "film": {"tmdb": film["tmdb"], "title": film["title"], "year": film["year"], "synopsis": synopsis}}
+def pick(film: dict[str, Any], synopsis: str) -> dict[str, Any]:
+    """A pick as the player reads it: the film alone, with the demo's own synopsis."""
+    return {"film": {**film, "synopsis": synopsis}}
 
 
 def synopses(revealed: set[int]) -> dict[int, str]:
@@ -371,45 +372,38 @@ def leaks(files: dict[str, str], values: list[str]) -> list[str]:
 
 @dataclass
 class Recorded:
-    """What Matinee's server said: the boot replies, the first screen, each door's walk, a pick to copy."""
+    """What Matinee's server said: the boot replies the player reads, the first screen and each door's walk."""
 
     boot: dict[str, Any]
     first: dict[str, Any]
     walks: dict[str, Walks]
-    pick: dict[str, Any]
 
 
 def record(c: TestClient) -> Recorded:
-    boot = {
-        "admission": ok(c.get("/api/admission")),
-        "setup": ok(c.get("/api/setup")),
-        "quips": ok(c.get("/api/quips")),
-        "pictures": ok(c.get("/api/pictures")),
-    }
     guest = ok(c.post("/api/profiles", json=GUEST))
     viewer = {"profile_id": guest["id"]}
-    boot["door"] = ok(c.get("/api/door"))
-    boot["open"] = ok(c.post(f"/api/profiles/{guest['id']}/open", json={"pin": None}))
-    boot["note"] = None
+    boot = {
+        "quips": ok(c.get("/api/quips")),
+        "open": ok(c.post(f"/api/profiles/{guest['id']}/open", json={"pin": None})),
+    }
     first = ok(c.post("/api/first", json={"viewer": viewer, "source": "held"}))
     walks = {tree: walk_door(c, viewer, tree) for tree in DOORS}
-    template = ok(c.post("/api/pick", json={"tree": DOORS[0], "viewer": viewer, "source": "held"}))
-    return Recorded(boot, first, walks, template)
+    return Recorded(boot, first, walks)
 
 
 def choose_all(rec: Recorded, plan: dict[str, Any], can: Revealable) -> dict[str, list[int]]:
-    """Three films per path. A listed film is kept while it is at the end of its path and may be revealed; every
+    """`PER_PATH` films per path. A listed film is kept while it is at the end of its path and may be revealed; every
     kept film is reserved first, so a path that needs more takes only films no other path keeps."""
     exclude = set(plan["exclude"])
     pools = {f"{tree}/{b}": (tree, pool) for tree, w in rec.walks.items() for b, pool in paths(w).items()}
     kept = {
-        name: [t for t in plan["reveal"].get(name, []) if t in pool and t not in exclude and can.allows(tree, t)][:3]
+        name: [t for t in plan["reveal"].get(name, []) if t in pool and t not in exclude and can.allows(tree, t)][:PER_PATH]
         for name, (tree, pool) in pools.items()
     }
     taken = {t for films in kept.values() for t in films}
     reveal: dict[str, list[int]] = {}
     for name, (tree, pool) in pools.items():
-        more = choose(tree, pool, 3 - len(kept[name]), taken, can) if len(kept[name]) < 3 else []
+        more = choose(tree, pool, PER_PATH - len(kept[name]), taken, can) if len(kept[name]) < PER_PATH else []
         reveal[name] = sorted(kept[name] + more)  # film-id order: no ordering from TMDB's votes is published
         taken |= set(more)
     check_reveal(reveal, pools)
@@ -417,12 +411,12 @@ def choose_all(rec: Recorded, plan: dict[str, Any], can: Revealable) -> dict[str
 
 
 def check_reveal(reveal: dict[str, list[int]], pools: dict[str, tuple[str, list[int]]]) -> None:
-    """Refuses a reveal list that breaks the demo: a path without exactly three films, a film off its path, or a
-    film on two paths."""
+    """Refuses a reveal list that breaks the demo: a path without exactly `PER_PATH` films, a film off its path,
+    or a film on two paths."""
     seen: dict[int, str] = {}
     for name, films in reveal.items():
-        if len(films) != 3:
-            raise SystemExit(f"{name} reveals {len(films)} films, not three")
+        if len(films) != PER_PATH:
+            raise SystemExit(f"{name} reveals {len(films)} films, not {PER_PATH}")
         for t in films:
             if t not in pools[name][1]:
                 raise SystemExit(f"film {t} is not behind {name}")
@@ -443,12 +437,10 @@ def canned_files(rec: Recorded, fit: set[int], reveal: dict[str, list[int]], car
     files = {
         "boot.json": as_text(rec.boot),
         "first.json": as_text({**rec.first, "options": doors, "pool": clean(list(reachable)), "source": None}),
-        "picks.json": as_text({name: [pick(rec.pick, cards[t], written[t]) for t in films] for name, films in reveal.items()}),
+        "picks.json": as_text({name: [pick(cards[t], written[t]) for t in films] for name, films in reveal.items()}),
     }
     for tree, w in rec.walks.items():
         files[f"walk/{tree}.json"] = as_text({k: {**s, "pool": clean(s["pool"])} for k, s in w.steps.items()})
-    for t, c in cards.items():
-        files[f"film/{t}.json"] = as_text(c)
     return files
 
 

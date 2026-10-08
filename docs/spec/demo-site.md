@@ -284,12 +284,15 @@ fixed script read from the canned files (section 5.3).
   and Matinee's table of hop lengths, times and pauses. The hops are drawn from
   a seed made from the pick's place in the walk, and every hop takes its
   table's time whatever the screen's size. Only how far the first hop must run
-  to leave the screen comes from the screen.
+  to leave the screen comes from the screen. A hunt the viewer leaves, by the
+  trail or the corner mark, stops where it stands, and the next screen's wall
+  only drifts.
 - **The reveal.** The landed poster grows to 2.4 times its cell in its own
   colour's glow while the rest of the wall dims, and the reveal line types under
   the gold one. After a 0.5 s beat the film's details rise (on a desktop its
   backdrop, its title, year and the demo's own synopsis) and the poster moves to
-  its slot over 1.3 s. A phone shows no backdrop; after 2.2 s its reveal
+  its slot over 1.3 s. The poster in its slot glows in its own colour, on a
+  screen that joined late too. A phone shows no backdrop; after 2.2 s its reveal
   scrolls to the film's details inside its own box.
 - **The actions.** "Not that one" draws the path's next film, without end.
   "Just pick one!" deals from the genre's paths, or every path at the doors. The
@@ -307,6 +310,9 @@ fixed script read from the canned files (section 5.3).
 - **Reduced motion.** Lines show whole, the hunt stands at its landing and the
   poster at its slot, as Matinee does under reduced motion.
 - **On its own.** `/demo/` opened alone plays its own presses at once.
+- **A load that fails.** When a canned file does not arrive, the screen says
+  "The demo didn't load. Reload the page to try again.", logs a warning, and
+  shows without joining the conductor's script.
 
 ### 5.3 The canned replies
 
@@ -333,16 +339,14 @@ The builder (section 6) records the canned files from Matinee's own server code.
 - The first screen's wall is every film behind the five doors' first
   questions.
 - Each path reveals exactly three films. No film is revealed by two paths.
-- Each pick reply is the one recorded pick reply with its film replaced. Its
-  film carries the demo's own synopsis from `tools/synopses.json`, written for
-  the demo and never copied from TMDB, whose terms forbid keeping its data
-  longer than six months.
-- Every film card links to `https://www.themoviedb.org/movie/<id>` with
-  `link_to` set to `tmdb`. It carries no synopsis and no backdrop path.
-- The picture reply names the site itself as the picture source
-  (`source: "server"`) with no TMDB paths. The page therefore asks the site for
-  every poster at `/img/poster/<id>/<size>` and every backdrop at
-  `/img/backdrop/<id>/l`.
+- Each pick holds its film alone: its id, title and year as Matinee's film
+  card names them, and the demo's own synopsis from `tools/synopses.json`,
+  written for the demo and never copied from TMDB, whose terms forbid keeping
+  its data longer than six months.
+- The canned set holds only what the player reads. The site carries no film
+  cards, and no reply the demo never makes.
+- The player asks the site for every poster at `/img/poster/<id>/<size>` and
+  every backdrop at `/img/backdrop/<id>/l`.
 - The pictures are WebP files with no extension. Each poster exists in the four
   sizes Matinee's page asks for (`xs`, `s`, `m`, `l`). Each revealed film's
   backdrop exists in `l`. No picture is kept for a film no screen shows.
@@ -563,21 +567,23 @@ being true.
   that half is skipped.
 - **The canned files** (`tests/canned.test.mjs`): five doors open in order with
   no source question. Every answer leads to a canned step. Each path reveals
-  three films, none twice, each with its card, its backdrop and a synopsis, and none marked
-  as the films running out. Each revealed film stands at the end of its own path.
-  Every card links to its TMDB page with no picture path and no synopsis. The
-  picture source is the site's own. Every film a screen shows has its poster at
-  every size, and no picture is kept for a film no screen shows. No canned file
-  holds an item id, a `{tmdb-` marker, a path under `/home/` or `/mnt/`, the
-  placeholder address, an address other than TMDB's and DoesTheDogDie's, or a
-  private field by name.
+  three films, none twice, each with its backdrop and a synopsis. Each revealed
+  film stands at the end of its own path. Every film a screen shows has its
+  poster at every size, and no picture is kept for a film no screen shows. No
+  canned file holds an item id, a `{tmdb-` marker, a path under `/home/` or
+  `/mnt/`, the placeholder address, any web address, or a private field by
+  name.
 - **The walk** (`tests/demo-walk.test.mjs`): on a desktop and on a phone, the
   player alone walks every path of every door to its reveal, round its three
   films in the canned order and back to the first, then "Start over". The walk
   fails on a page error, an unhandled rejection, a step whose next screen does
   not appear in time, any request to another origin, and, on the desktop, a
   screen that scrolls inside itself. The corner mark inside
-  the demo starts over in place at `/demo/`.
+  the demo starts over in place at `/demo/`. The demo fetches every canned file
+  the site carries, and no other. A canned file refused leaves both drawn
+  screens showing and saying the demo did not load. A hunt left by the trail
+  stops: over the next 2 s the doors wall moves no further sideways and no more
+  than 25 px down.
 - **The frames** (`tests/frames.test.mjs`): both screens open on the doors
   question, greeting the guest, and every item of the profile menu only closes
   it. Each frame stays at `/demo/`. A window that widens past a phone's width gets its monitor's demo
@@ -587,8 +593,9 @@ being true.
   walk on the drawn phone moves the monitor, and the phone's Back and the
   desktop's trail move both. "Just pick one!" mid-walk and the phone's Back on a
   pick move both. The profile menu opens and closes on both by Escape and a
-  press beside it, and its items move neither screen. A note's panel opens on
-  both, and its Save moves nothing. A screen reloaded mid-walk rejoins where the
+  press beside it, and its items move neither screen. "More on TMDB ↗" opens no
+  page and moves nothing. A note's panel opens on both, and its Save moves
+  nothing. A screen reloaded mid-walk rejoins where the
   other stands. At full motion both screens reach every reveal within 100 ms of
   each other. A wheel over a frame moves the deck; a flick that scrolls a
   phone's reveal, even to its end, leaves the deck where it is.
@@ -611,17 +618,16 @@ remake them.
 
 ### 9.1 The canned files
 
-All live under `canned/`. Each is one line of compact JSON. Every reply body is
-Matinee's own reply shape for that route, as specified in Matinee's spec; only
-the layout of the files is the site's.
+All live under `canned/`. Each is one line of compact JSON. The quips, the
+profile, the first view and the walk replies are Matinee's own reply shapes for
+their routes, as specified in Matinee's spec; a pick is the site's own.
 
 ```text
-canned/boot.json             { "admission": …, "setup": …, "quips": …, "pictures": …,
-                               "door": …, "open": …, "note": null }
+canned/boot.json             { "quips": <Matinee's /api/quips reply>, "open": <its profile open reply> }
 canned/first.json            Matinee's /api/first reply
 canned/walk/<tree>.json      { "<answers key>": <Matinee's /api/walk reply>, … }
-canned/picks.json            { "<tree>/<path>": [ <pick reply>, <pick reply>, <pick reply> ], … }
-canned/film/<tmdb id>.json   Matinee's /api/film/<id> reply
+canned/picks.json            { "<tree>/<path>": [ <pick>, <pick>, <pick> ], … }
+<pick>                       { "film": { "tmdb": …, "title": …, "year": …, "synopsis": … } }
 ```
 
 (`tools/build_demo.py::canned_files`, `tools/build_demo.py::record`)
@@ -632,21 +638,8 @@ canned/film/<tmdb id>.json   Matinee's /api/film/<id> reply
   (`tools/build_demo.py::key`)
 - `<path>` is the door's subgenre answer as `question:option`, or `_` for a door
   that asks nothing. (`tools/build_demo.py::paths`)
-- These fields hold the same values on every build, except that `tmdb` and
-  `link` name each card's own film (`tools/build_demo.py::card`,
-  `tools/build_demo.py::canned_files`, `tools/build_demo.py::record`):
-
-```json
-{ "pictures": { "source": "server", "posters": {} } }
-```
-
-```json
-{ "tmdb": 105, "synopsis": null, "link": "https://www.themoviedb.org/movie/105",
-  "link_to": "tmdb", "backdrop_path": null }
-```
-
-  The first block is a part of `boot.json`. The second is a part of every film
-  card. Separately, `first.json` always carries `"source": null`.
+- `first.json` always carries `"source": null`. No canned file holds a web
+  address.
 
 ### 9.2 The pictures
 
@@ -783,7 +776,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `site/player-wall.js::huntPlan` / `DemoWall.hunt` | Hops, times and pauses from a seed and Matinee's hop table; the screen gives only the first hop's reach |
 | `site/player-wall.js::DemoWall.grow` / `glowAt` / `endPick` | The landed poster grows 2.4 times in its glow while the wall dims; a pick's end restores the wall |
 | `site/player-wall.js::sequence` / `seedOf` | Numbers and seeds the same in every screen |
-| `site/conductor.js::conductor` | Hands each press to every player 120 ms ahead; a late joiner replays the presses since "Start over" |
+| `site/conductor.js::conductor` | Hands each press to every player 120 ms ahead; a late joiner replays the presses since "Start over"; `show` reveals a frame that could not load without joining it |
 | `site/conductor.js::forwardWheel` | A wheel over a frame moves the deck unless it scrolls inside the frame |
 | `site/scrolls.js::scrollsHere` | Whether a wheel scrolls something inside its own document; shared by the conductor and the player, which stops any wheel that does not |
 
@@ -793,7 +786,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 |---|---|
 | `tools/build_demo.py::client` | Matinee's own app in process on a copy of the film table; the table's record of the library replaces the media server; no synopsis |
 | `tools/build_demo.py::Library` | The library as the table recorded it; answers no synopsis |
-| `tools/build_demo.py::record` | The boot replies, the Guest profile, the first screen, every walk and one pick template, all as "only what we can watch" |
+| `tools/build_demo.py::record` | The quips, the Guest profile opened, the first screen and every walk, all as "only what we can watch" |
 | `tools/build_demo.py::SUBGENRE` / `walk_door` | A door's subgenre question under its opening line, the questions before it answered with their broadest answer, each answer ending its path |
 | `tools/build_demo.py::MOST_ANSWERS` / `SHOWN` / `shown` | At most four answers a question; a longer one shows the answers `SHOWN` names, and one `SHOWN` does not name stops the build |
 | `tools/build_demo.py::paths` | A door's paths: its subgenre answers, or `_` |
@@ -801,7 +794,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tools/build_demo.py::Revealable.allows` | Real poster, backdrop, year 1960 or later, and labelled behind the door (Documentaries by Matinee's rule) |
 | `tools/build_demo.py::choose_all` / `choose` | Keeps listed films that still qualify, reserves them first, fills the rest with each era's most-voted film, then the most-voted, keeps each path's three in film-id order, with no film in two paths |
 | `tools/build_demo.py::check_reveal` | Refuses a path without three films, a film off its path, or a film in two paths |
-| `tools/build_demo.py::card` | A card linked to TMDB with no synopsis and no backdrop path |
+| `tools/build_demo.py::card` | A revealed film's id, title and year, from Matinee's film card |
 | `tools/build_demo.py::canned_files` | The canned files in memory: walls of real-poster films in film-id order, the first wall as every door's films, `source` null |
 | `tools/build_demo.py::PRIVATE_FIELDS` / `private_fields` / `leaks` | Refuses a private field by name, a setting's value, a folder marker or an item id before anything is written |
 | `tools/build_demo.py::pictures` / `convert` | WebP at Matinee's widths, quality 72, metadata stripped; written under a working name and renamed whole; remade when the widths or quality change |
@@ -822,8 +815,8 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tests/deck.test.mjs` | The deck's gestures, judged by where the slides stand |
 | `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again" |
 | `tests/page-copy.test.mjs` | The borrowed files against `PAGE_FILES`, and against the commit where a checkout is at hand |
-| `tests/canned.test.mjs` | The canned files' completeness, path membership, links, picture source, pictures and privacy |
-| `tests/demo-walk.test.mjs` | Every path walked to a pick and round its films, on a desktop and a phone |
+| `tests/canned.test.mjs` | The canned files' completeness, path membership, pictures and privacy |
+| `tests/demo-walk.test.mjs` | Every path walked to a pick and round its films, on a desktop and a phone; the canned set fetched whole; a failed load; a hunt left behind |
 | `tests/frames.test.mjs` | Both screens open on the doors; the profile menu's items do nothing; the late monitor |
 | `tests/conductor.test.mjs` | Both screens play every press together, reveal within 100 ms of each other, rejoin after a reload, and pass the wheel |
 | `tests/deck-held.test.mjs` | A walk to a pick inside a frame leaves the deck where it stands, in Firefox |

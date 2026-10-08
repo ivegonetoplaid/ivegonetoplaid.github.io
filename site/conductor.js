@@ -48,7 +48,11 @@ export function conductor() {
     async join(win) {
       players.add(win);
       forwardWheel(win);
-      await win.matineeDemo.replay(log);
+      await win.matineeDemo.replay([...log]); // a press made mid-replay reaches the screen once, by `apply`
+      this.show(win);
+    },
+    // Shows a screen's frame without playing the script on it (a demo that could not load says so there).
+    show(win) {
       frameOf(win)?.classList.add("live");
     },
   };
