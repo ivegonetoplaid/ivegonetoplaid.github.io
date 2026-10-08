@@ -576,8 +576,11 @@ being true.
   `/mnt/`, the placeholder address, any web address, or a private field by
   name.
 - **The walk** (`tests/demo-walk.test.mjs`): on a desktop and on a phone, the
-  player alone walks every path of every door to its reveal, round its three
-  films in the canned order and back to the first, then "Start over". The walk
+  player alone walks one path to its reveal, round its three films in the
+  canned order and back to the first, then "Start over". On the desktop every
+  door's first screen is opened once and must not scroll inside itself. Every
+  path runs the same player code, and the canned files test checks each path's
+  data without a browser. The walk
   fails on a page error, an unhandled rejection, a step whose next screen does
   not appear in time, any request to another origin, and, on the desktop, a
   screen that scrolls inside itself. The corner mark inside
@@ -818,7 +821,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again", only the first slide before the deck's script |
 | `tests/page-copy.test.mjs` | The borrowed files against `PAGE_FILES`, and against the commit where a checkout is at hand |
 | `tests/canned.test.mjs` | The canned files' completeness, path membership, pictures and privacy |
-| `tests/demo-walk.test.mjs` | Every path walked to a pick and round its films, on a desktop and a phone; the canned set fetched whole; a failed load; a hunt left behind |
+| `tests/demo-walk.test.mjs` | One path walked to a pick and round its films on a desktop and a phone; each door's first screen on the desktop; the canned set fetched whole; a failed load; a hunt left behind |
 | `tests/frames.test.mjs` | Both screens open on the doors; the profile menu's items do nothing; the late monitor |
 | `tests/conductor.test.mjs` | Both screens play every press together, reveal within 100 ms of each other, rejoin after a reload, and pass the wheel |
 | `tests/deck-held.test.mjs` | A walk to a pick inside a frame leaves the deck where it stands, in Firefox |

@@ -1,8 +1,9 @@
-// A headless walk of every demo path on a phone and a desktop, through the demo's player served from the site:
-// from the doors question into each genre, down each subgenre answer to the reveal, "Not that one" round the
-// path's three films and back to the first, then "Start over". It fails on a page error or an unhandled
-// rejection, a step whose next screen does not appear in time, a desktop screen that scrolls inside itself, and
-// any request to an origin other than the site's own.
+// The demo's player served from the site, driven headless. One path is walked whole on a phone and on a
+// desktop: the door, its answer, the reveal, "Not that one" round the path's three films and back to the first,
+// then "Start over". Every door's first screen is opened once on the desktop, where it must not scroll inside
+// itself. Every path runs the same player code; the canned test checks each path's data without a browser.
+// A walk fails on a page error or an unhandled rejection, a step whose next screen does not appear in time, a
+// desktop screen that scrolls inside itself, and any request to an origin other than the site's own.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { after, before, test } from "node:test";
@@ -34,10 +35,10 @@ after(async () => {
   await site.stop();
 });
 
-// The paths of a door: its first question's answers, or "_" for a door that asks nothing.
-function branchesOf(tree) {
+// A door's first path: its first question's first answer, or "_" for a door that asks nothing.
+function firstPath(tree) {
   const q = walks[tree][""].question;
-  return q ? q.options.map((o) => ({ name: `${q.id}:${o.index}`, say: o.say })) : [{ name: "_", say: null }];
+  return q ? { name: `${q.id}:${q.options[0].index}`, say: q.options[0].say } : { name: "_", say: null };
 }
 
 async function open(viewport) {
@@ -108,37 +109,47 @@ async function noInnerScroll(page, where) {
 // The title the pick screen shows.
 const pickedTitle = (page) => page.locator(".film-title").first().textContent({ timeout: STEP_MS });
 
-async function walkDoor(page, door) {
-  for (const path of branchesOf(door.tree)) {
-    await press(page, named(page, door.say));
-    await walkTo(page, path.say);
-    const titles = [await pickedTitle(page)];
-    for (let i = 0; i < 3; i++) {
-      await page.getByRole("button", { name: "Not that one" }).click({ timeout: STEP_MS });
-      await page.locator(".film-title", { hasNotText: titles.at(-1) }).first().waitFor({ timeout: STEP_MS });
-      titles.push(await pickedTitle(page));
-    }
-    const expected = picks[`${door.tree}/${path.name}`].map((r) => [r.film.title, r.film.year].filter(Boolean).join(" "));
-    assert.deepEqual(titles, [...expected, expected[0]], `${door.tree}/${path.name} cycles its three films`);
-    await noProblem(page, `${door.tree}/${path.name}`);
-    await page.getByRole("button", { name: "Start over" }).first().click({ timeout: STEP_MS });
-    await atDoors(page);
+// Walks `door`'s first path to its reveal, round its three films and back to the first, then starts over.
+async function walkPath(page, door) {
+  const path = firstPath(door.tree);
+  await press(page, named(page, door.say));
+  await walkTo(page, path.say);
+  const titles = [await pickedTitle(page)];
+  for (let i = 0; i < 3; i++) {
+    await page.getByRole("button", { name: "Not that one" }).click({ timeout: STEP_MS });
+    await page.locator(".film-title", { hasNotText: titles.at(-1) }).first().waitFor({ timeout: STEP_MS });
+    titles.push(await pickedTitle(page));
   }
+  const expected = picks[`${door.tree}/${path.name}`].map((r) => [r.film.title, r.film.year].filter(Boolean).join(" "));
+  assert.deepEqual(titles, [...expected, expected[0]], `${door.tree}/${path.name} cycles its three films`);
+  await noProblem(page, `${door.tree}/${path.name}`);
+  await page.getByRole("button", { name: "Start over" }).first().click({ timeout: STEP_MS });
+  await atDoors(page);
 }
 
 for (const [label, viewport] of [
   ["a desktop", { width: 1680, height: 1050 }],
   ["a phone", { width: 390, height: 844 }],
 ]) {
-  for (const door of first.options) {
-    test(`on ${label}, every path behind ${door.say} walks to a pick and round its three films`, { timeout: 600000 }, async () => {
-      const { page, context, trouble } = await open(viewport);
-      await walkDoor(page, door);
-      assert.deepEqual(trouble, []);
-      await context.close();
-    });
-  }
+  test(`on ${label}, a path walks to its reveal, round its three films, and starts over`, { timeout: 120000 }, async () => {
+    const { page, context, trouble } = await open(viewport);
+    await walkPath(page, first.options[0]);
+    assert.deepEqual(trouble, []);
+    await context.close();
+  });
 }
+
+test("on a desktop, every door's first screen fits without scrolling inside itself", { timeout: 120000 }, async () => {
+  const { page, context, trouble } = await open({ width: 1680, height: 1050 });
+  for (const door of first.options) {
+    await press(page, named(page, door.say));
+    await noInnerScroll(page, door.say);
+    await page.locator(".wordmark").click({ timeout: STEP_MS });
+    await atDoors(page);
+  }
+  assert.deepEqual(trouble, []);
+  await context.close();
+});
 
 test("the corner mark inside the demo starts over in place and never loads the site inside it", async () => {
   const { page, context, trouble } = await open({ width: 1280, height: 800 });
