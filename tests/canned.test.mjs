@@ -1,7 +1,7 @@
 // The demo's canned files: every answer a canned question offers leads to a canned step; every film a screen
 // shows has its poster at each size the page asks for; every revealed film has its card and its backdrop; the
-// cards link to TMDB and carry no TMDB picture path; the picture source is the site's own; each branch reveals
-// three films and no film is revealed by two branches.
+// cards link to TMDB and carry no TMDB picture path; the picture source is the site's own; each path reveals
+// three films and no film is revealed by two paths.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -32,12 +32,12 @@ test("every answer a canned question offers leads to a canned step", () => {
   }
 });
 
-test("each branch reveals three films, no film twice, each with its card and its backdrop", () => {
+test("each path reveals three films, no film twice, each with its card and its backdrop", () => {
   const seen = new Set();
-  for (const [branch, replies] of Object.entries(picks)) {
-    assert.equal(replies.length, 3, branch);
+  for (const [path, replies] of Object.entries(picks)) {
+    assert.equal(replies.length, 3, path);
     for (const r of replies) {
-      assert.ok(!seen.has(r.film.tmdb), `${r.film.tmdb} is revealed by two branches`);
+      assert.ok(!seen.has(r.film.tmdb), `${r.film.tmdb} is revealed by two paths`);
       seen.add(r.film.tmdb);
       assert.ok(existsSync(join(ROOT, "canned/film", `${r.film.tmdb}.json`)), `card ${r.film.tmdb}`);
       assert.ok(existsSync(join(ROOT, "img/backdrop", String(r.film.tmdb), "l")), `backdrop ${r.film.tmdb}`);
@@ -80,11 +80,11 @@ test("the canned files hold nothing from the operator's machines", () => {
   }
 });
 
-test("each revealed film stands behind its own branch", () => {
-  for (const [branch, replies] of Object.entries(picks)) {
-    const [tree, answer] = branch.split("/");
+test("each revealed film stands behind its own path", () => {
+  for (const [path, replies] of Object.entries(picks)) {
+    const [tree, answer] = path.split("/");
     const pool = new Set(walks[tree][answer === "_" ? "" : answer].pool);
-    for (const r of replies) assert.ok(pool.has(r.film.tmdb), `${r.film.title} is not behind ${branch}`);
+    for (const r of replies) assert.ok(pool.has(r.film.tmdb), `${r.film.title} is not behind ${path}`);
   }
 });
 

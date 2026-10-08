@@ -1,6 +1,6 @@
-// A headless walk of every canned branch on a phone and a desktop, through Matinee's real page served from the
-// site: past the front door as the site's demo goes, into each door, down its first answer and then the first
-// answer of each later question to the pick, "Not that one" round the branch's three films and back to the
+// A headless walk of every canned path on a phone and a desktop, through Matinee's real page served from the
+// site: past the front door as the site's demo goes, into each door, down each subgenre answer to the pick (and
+// the first answer of any question after it), "Not that one" round the path's three films and back to the
 // first, then "Start over". It fails on a problem screen, a page error or an unhandled rejection, a step whose
 // next screen does not appear in time, and any request to an origin other than the site's own.
 import assert from "node:assert/strict";
@@ -34,7 +34,7 @@ after(async () => {
   await site.stop();
 });
 
-// The branches of a door: its first question's answers, or "_" for a door that asks nothing.
+// The paths of a door: its first question's answers, or "_" for a door that asks nothing.
 function branchesOf(tree) {
   const q = walks[tree][""].question;
   return q ? q.options.map((o) => ({ name: `${q.id}:${o.index}`, say: o.say })) : [{ name: "_", say: null }];
@@ -89,39 +89,50 @@ async function press(page, button) {
 async function walkTo(page, say) {
   if (say) await press(page, named(page, say));
   for (let i = 0; i < 6; i++) {
+    await noInnerScroll(page, `${say} step ${i}`);
     if (await page.getByRole("button", { name: "Not that one" }).isVisible()) return;
     await press(page, page.locator(".answers .letterbox, .answers .pail").first());
   }
   throw new Error("the walk did not reach a pick");
 }
 
+// Fails when the desktop's screen scrolls inside itself: the drawn monitor shows the whole of every screen.
+async function noInnerScroll(page, where) {
+  if (page.viewportSize().width <= 600) return;
+  const over = await page.evaluate(() => {
+    const stage = document.querySelector("main.stage");
+    return stage ? stage.scrollHeight - stage.clientHeight : 0;
+  });
+  assert.ok(over <= 1, `the desktop screen scrolls ${over} px inside itself at ${where}`);
+}
+
 // The title the pick screen shows.
 const pickedTitle = (page) => page.locator(".film-title").first().textContent({ timeout: STEP_MS });
 
 async function walkDoor(page, door) {
-  for (const branch of branchesOf(door.tree)) {
+  for (const path of branchesOf(door.tree)) {
     await press(page, named(page, door.say));
-    await walkTo(page, branch.say);
+    await walkTo(page, path.say);
     const titles = [await pickedTitle(page)];
     for (let i = 0; i < 3; i++) {
       await page.getByRole("button", { name: "Not that one" }).click({ timeout: STEP_MS });
       await page.locator(".film-title", { hasNotText: titles.at(-1) }).first().waitFor({ timeout: STEP_MS });
       titles.push(await pickedTitle(page));
     }
-    const expected = picks[`${door.tree}/${branch.name}`].map((r) => [r.film.title, r.film.year].filter(Boolean).join(" "));
-    assert.deepEqual(titles, [...expected, expected[0]], `${door.tree}/${branch.name} cycles its three films`);
-    await noProblem(page, `${door.tree}/${branch.name}`);
+    const expected = picks[`${door.tree}/${path.name}`].map((r) => [r.film.title, r.film.year].filter(Boolean).join(" "));
+    assert.deepEqual(titles, [...expected, expected[0]], `${door.tree}/${path.name} cycles its three films`);
+    await noProblem(page, `${door.tree}/${path.name}`);
     await page.getByRole("button", { name: "Start over" }).first().click({ timeout: STEP_MS });
     await atDoors(page);
   }
 }
 
 for (const [label, viewport] of [
-  ["a desktop", { width: 1280, height: 800 }],
+  ["a desktop", { width: 1680, height: 1050 }],
   ["a phone", { width: 390, height: 844 }],
 ]) {
   for (const door of first.options) {
-    test(`on ${label}, every branch behind ${door.say} walks to a pick and round its three films`, { timeout: 600000 }, async () => {
+    test(`on ${label}, every path behind ${door.say} walks to a pick and round its three films`, { timeout: 600000 }, async () => {
       const { page, context, trouble } = await open(viewport);
       await walkDoor(page, door);
       assert.deepEqual(trouble, []);

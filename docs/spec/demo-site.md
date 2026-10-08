@@ -42,8 +42,10 @@ This spec borrows Matinee's words. The *front door* is the page's profile
 screen, where a *Guest tile* opens a profile, and a *door word* can lock it. The
 *source question* asks whether to choose from the library, from films it lacks,
 or both. A *door* is one mood the first question offers (Comedy, Horror…); that
-question is the *doors question*. Each door asks a *tree* of questions, and one
-path through them is a *walk*. The *wall* is the poster backdrop, and it shows
+question is the *doors question*. A door is a *genre*, and the question that
+names the kind of film inside it (slashers, slapstick) asks its *subgenre*. Each
+door asks a *tree* of questions; the answers a viewer gives are their *path*,
+and asking them is a *walk*. The *wall* is the poster backdrop, and it shows
 the films still in play, the step's *pool*. A pick *reveals* one film. The
 *trail* is the desktop's row of ways back. *Quips* are Matinee's short spoken
 lines.
@@ -79,7 +81,8 @@ lines.
 ## 2. The deck
 
 The page never scrolls. Three slides stand as layers over one curtain, and the
-deck moves between them.
+deck moves between them. Nothing scrolls the deck itself, not even a page inside
+a demo frame bringing something into view.
 
 **A wheel pull.**
 
@@ -275,15 +278,15 @@ to a server.
   given so far.
 - **A film card.** `/api/film/<id>` is answered from `film/<id>.json`.
 - **A pick.** `/api/pick` deals from `picks.json`:
-  - With a branch chosen (a door's first answer, or a door that asks nothing),
-    it deals that branch's three films.
-  - With a door chosen but no answer yet ("Just pick one!" at the door's first
-    question), it deals every branch of that door, one after another.
-  - With no door, it deals every branch of every door.
+  - With a path chosen (a subgenre answer, or a door that asks nothing),
+    it deals that path's three films.
+  - With a door chosen but no answer yet ("Just pick one!" at the subgenre
+    question), it deals every path of that door, one after another.
+  - With no door, it deals every path of every door.
   - It returns the film at position *n* modulo the deal's length, where *n* is
     the number of films the viewer has already seen. So "Not that one"
     cycles through the films without end, and the demo never says that the
-    films ran out. Later answers inside a branch do not change its films.
+    films ran out.
 - **A note.** A viewer's note is answered with two lines: "Thanks for that. On
   a real Matinee it goes to whoever runs it." and "This is only the demo."
   Nothing is kept.
@@ -293,30 +296,43 @@ to a server.
   `error: "not_found"` and a message. A canned file that cannot be read gives a
   500 reply with `error: "refused"`, and logs a warning. Either way the page
   receives a failure it can show, never an exception.
-- **One set of lines.** Matinee's page deals its quip lines with
-  `Math.random`. The stand-in loads before Matinee's quip module and replaces
-  `Math.random`: a call made from Matinee's quip module draws from one fixed
-  seeded sequence, the same in every frame, and every other call stays random.
-  So the two screens say the same lines, while the poster wall keeps its
-  own randomness.
+- **One set of lines, one rhythm.** Matinee's page deals its quip lines and
+  plans each hunt with `Math.random`. The stand-in loads before Matinee's
+  modules and replaces `Math.random`: a call made from Matinee's quip module
+  draws from one fixed seeded sequence, and a call made from its hunt planner
+  draws from a second sequence, started afresh at each pick from that pick's
+  door, answers and draw count. Both are the same in every frame, and every
+  other call stays random. So the two screens say the same lines and hunt
+  with the same hops for the same times, while each poster wall keeps its own
+  order. The screens still land a little apart, up to about half a second:
+  Matinee's first hop always crosses its screen, and the desktop's screen is
+  wider.
 
 ### 5.3 The canned replies
 
 The builder (section 6) records the canned files from Matinee's own server code. Their shapes are in section 9.
 
 - The demo opens five doors, in this order: Comedy, Horror, Sci-fi, For the
-  kids and Documentaries. A branch is a door's first answer. Documentaries,
-  which asks no question, is one branch.
+  kids and Documentaries. A demo path is short: the door, its subgenre answer,
+  then the reveal. Documentaries, which asks no question, is one path.
 - The first view says "What are we in the mood for?" and carries no source
   question: every reply was recorded as "only what we can watch right now".
-- The walk files hold every question and answer Matinee's trees ask on the way
-  to a pick. An answer whose films the library lacks is absent, as Matinee
-  leaves it out.
+- Each walk file holds one question, the door's subgenre question
+  (`SUBGENRE`), under the door's own opening line, and one step for each of its
+  answers, which ends the path. A question Matinee asks before the subgenre
+  (Comedy's audience, the children's age) is answered silently with the answer
+  that leaves the most films, and is never shown; questions after it (Horror's
+  gore and era) are not asked. The subgenre question shows at most four
+  answers. A longer one shows the four mainstream answers the builder names for
+  it (`SHOWN`); the catch-all and the niche answers are left out. A footnote
+  that explains an asterisk goes with the starred answer when that answer is
+  left out. An answer whose
+  films the library lacks is absent, as Matinee leaves it out.
 - Every wall's films are the films Matinee's server named for that step, less
   any film without a real poster, in film-id order.
 - The first screen's wall is every film behind the five doors' first
   questions.
-- Each branch reveals exactly three films. No film is revealed by two branches.
+- Each path reveals exactly three films. No film is revealed by two paths.
 - Each pick reply is the one recorded pick reply with its film replaced. Its
   other fields stay as Matinee answered them.
 - Every film card links to `https://www.themoviedb.org/movie/<id>` with
@@ -332,7 +348,9 @@ The builder (section 6) records the canned files from Matinee's own server code.
 ### 5.4 The frames and Matinee's front door
 
 - Each demo is Matinee's page from `/demo/`, in an `iframe`. The monitor's
-  frame is 1280 × 800. The phone's frame is 390 × 786 and stands below the
+  frame is 1680 × 1050, tall enough that no screen of the demo scrolls inside
+  the drawn monitor (at 1280 × 800 Matinee's longer questions scroll by up to
+  190 px). The phone's frame is 390 × 786 and stands below the
   drawn phone's 58 px status bar. The site scales each frame to the width of the
   glass it stands in, and rescales it when that glass changes size. The full-screen
   demo's frame fills the screen at its natural size.
@@ -443,30 +461,32 @@ A missing or empty setting stops the builder with a message.
 - **A real poster.** A poster is real when its width over its height lies
   between 0.6 and 0.75. A video frame is wide, so it fails. A film without a real
   poster is left off every wall.
-- **What may be revealed.** A film may be revealed behind a branch when all of
+- **What may be revealed.** A film may be revealed at the end of a path when all of
   these hold:
   - it has a real poster and a backdrop on disk;
-  - the film table holds it, with a year of 1985 or later;
-  - the shipped labels place it behind the branch's door, except on
+  - the film table holds it, with a year of 1960 or later;
+  - the shipped labels place it behind the path's door, except on
     Documentaries, whose films Matinee places by its own rule;
-  - it is in the branch's pool;
+  - it is in the path's pool;
   - it is not listed under `exclude` (section 6.4);
-  - no other branch reveals it.
-- **Listed films first.** `tools/demo-films.json` lists three films per branch.
-  A listed film is kept while it may still be revealed behind its branch. Every
-  kept film is reserved before any branch is filled.
-- **Filling a place.** A branch with fewer than three kept films takes the
-  most-voted films that may be revealed and that no branch has reserved. A branch
+  - no other path reveals it.
+- **Listed films first.** `tools/demo-films.json` lists three films per path.
+  A listed film is kept while it may still be revealed at the end of its path. Every
+  kept film is reserved before any path is filled.
+- **Filling a place.** A path with fewer than three kept films takes, from the
+  films that may be revealed and that no path has reserved, the most-voted film
+  of each era (before 2000, 2000 to 2011, 2012 on) that has one, then the
+  most-voted of the rest, so each path shows old and new alike. A path
   that cannot reach three stops the builder, which asks for three films to be
   listed by hand.
 - **The film list is written back.** The builder writes the films it settled on
-  for every branch back to `tools/demo-films.json`, each branch's three in
+  for every path back to `tools/demo-films.json`, each path's three in
   film-id order, so no ordering drawn from TMDB's votes is published.
 
 ### 6.4 Removing a film
 
 Removing a film is one entry under `exclude` in `tools/demo-films.json` and a
-rebuild. The rebuild drops the film from every wall and every branch, fills any
+rebuild. The rebuild drops the film from every wall and every path, fills any
 place it held, and removes its pictures.
 
 ### 6.5 What it refuses
@@ -474,8 +494,8 @@ place it held, and removes its pictures.
 The builder makes every canned file in memory and checks it before anything is
 written. It refuses, and writes nothing, when:
 
-- a branch does not reveal exactly three films, a revealed film is not behind
-  its branch, or one film is revealed by two branches;
+- a path does not reveal exactly three films, a revealed film is not at the end of
+  its path, or one film is revealed by two paths;
 - any canned file carries a field, at any depth, named `item_id`, `itemid`,
   `path`, `file`, `folder`, `server`, `host`, `url`, `key`, `token` or
   `library`, whatever its value;
@@ -564,14 +584,14 @@ being true.
   checksum also matches the file at the commit in `MATINEE_COMMIT`. Elsewhere
   that half is skipped.
 - **The stand-in** (`tests/stand-in.test.mjs`): every canned walk step is
-  answered by its own answers. Each branch's films come round in turn, seven
-  draws deep. Before a branch, the door's branches deal. The boot replies, the
+  answered by its own answers. Each path's films come round in turn, seven
+  draws deep. Before a path, the door's paths deal. The boot replies, the
   first screen, a film card and a note are answered. An unknown call, a missing
   film and a failed read each give a failure, and a failed read is tried again.
 - **The canned files** (`tests/canned.test.mjs`): five doors open in order with
-  no source question. Every answer leads to a canned step. Each branch reveals
+  no source question. Every answer leads to a canned step. Each path reveals
   three films, none twice, each with its card and its backdrop, and none marked
-  as the films running out. Each revealed film stands behind its own branch.
+  as the films running out. Each revealed film stands at the end of its own path.
   Every card links to its TMDB page with no picture path and no synopsis. The
   picture source is the site's own. Every film a screen shows has its poster at
   every size, and no picture is kept for a film no screen shows. No canned file
@@ -579,10 +599,11 @@ being true.
   placeholder address, an address other than TMDB's and DoesTheDogDie's, or a
   private field by name.
 - **The walk** (`tests/demo-walk.test.mjs`): on a desktop and on a phone, every
-  branch of every door walks to a pick, round its three films in the canned
+  path of every door walks to a pick, round its three films in the canned
   order and back to the first, then "Start over". The walk fails on Matinee's problem
   screen, a page error, an unhandled rejection, a step whose next screen does
-  not appear in time, and any request to another origin. The corner mark inside
+  not appear in time, any request to another origin, and, on the desktop, a
+  screen that scrolls inside itself. The corner mark inside
   the demo starts over in place at `/demo/`.
 - **The frames** (`tests/frames.test.mjs`): both screens open on the doors
   question. A per-frame watch sees no front door in either frame through Change
@@ -599,6 +620,9 @@ being true.
   full motion the screens keep step through a pick and "Not that one". A wheel
   over a frame moves the deck. A flick that scrolls inside a frame, even to its
   end, leaves the deck where it is.
+- **The held deck** (`tests/deck-held.test.mjs`): in Firefox, which carries a
+  frame's scroll-into-view out to the boxes around it, a walk to a pick on the
+  monitor leaves the deck unscrolled.
 - **The phone's demo** (`tests/phone-demo.test.mjs`): a phone sees only the
   drawn phone and "Try the demo", which opens Matinee full screen on the doors
   question with the "Demo ✕" chip. Back returns to slide two. The chip closes
@@ -624,7 +648,7 @@ canned/boot.json             { "admission": …, "setup": …, "quips": …, "pi
                                "door": …, "open": …, "note": null }
 canned/first.json            Matinee's /api/first reply
 canned/walk/<tree>.json      { "<answers key>": <Matinee's /api/walk reply>, … }
-canned/picks.json            { "<tree>/<branch>": [ <pick reply>, <pick reply>, <pick reply> ], … }
+canned/picks.json            { "<tree>/<path>": [ <pick reply>, <pick reply>, <pick reply> ], … }
 canned/film/<tmdb id>.json   Matinee's /api/film/<id> reply
 ```
 
@@ -634,8 +658,8 @@ canned/film/<tmdb id>.json   Matinee's /api/film/<id> reply
 - An answers key joins each answer as `question:option`, with commas. The empty
   key `""` is the door's first step.
   (`tools/build_demo.py::key`, `tools/api.js::keyOf`)
-- `<branch>` is the door's first answer as `question:option`, or `_` for a door
-  that asks nothing. (`tools/build_demo.py::branches`)
+- `<path>` is the door's subgenre answer as `question:option`, or `_` for a door
+  that asks nothing. (`tools/build_demo.py::paths`)
 - These fields hold the same values on every build, except that `tmdb` and
   `link` name each card's own film (`tools/build_demo.py::card`,
   `tools/build_demo.py::canned_files`, `tools/build_demo.py::record`):
@@ -674,9 +698,9 @@ img/.made-with.json                     {"quality": 72, "poster": {"xs": 100, "s
 }
 ```
 
-`exclude` lists TMDB ids the site must never show. `reveal` maps each branch to
+`exclude` lists TMDB ids the site must never show. `reveal` maps each path to
 its three TMDB ids, in film-id order, which is the order "Not that one" deals
-them. The builder writes `exclude` sorted and `reveal` for every branch.
+them. The builder writes `exclude` sorted and `reveal` for every path.
 (`tools/build_demo.py::main`, `tools/build_demo.py::choose_all`)
 
 ### 9.4 `MATINEE_COMMIT` and `PAGE_FILES`
@@ -760,11 +784,11 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tools/copy_page.sh` | Copies Matinee's page from one commit, records `PAGE_FILES` before placing the stand-in, and writes `MATINEE_COMMIT` |
 | `tools/api.js` (copied to `static/js/api.js`) | The stand-in: Matinee's four helpers, answered from the canned files |
 | `tools/api.js::canned` | Reads a canned file once; forgets a failed read so it is tried again |
-| `tools/api.js::dealFrom` | The branches a pick deals from: the branch, the door's branches, or every branch |
+| `tools/api.js::dealFrom` | The paths a pick deals from: the path, the door's paths, or every path |
 | `tools/api.js::pick` | The film at the count of films seen, modulo the deal: cycles without end |
 | `tools/api.js::walk` | A walk step by its answers key |
 | `tools/api.js::get` / `post` / `put` / `del` (exported through `call`) | Answers every route the page calls; an unknown `get` or `post` route answers 404; a failed read answers 500 with a warning |
-| `tools/api.js::seeded` | Matinee's quip draws come from one fixed sequence in every frame; every other `Math.random` stays native |
+| `tools/api.js::sequence` / `placeOf` | Matinee's quip draws come from one fixed sequence, and its hunt plans from one restarted at each pick by the pick's place in the walk, the same in every frame; every other `Math.random` stays native |
 | `site/demo.js::mountDemo` | A frame of `/demo/` at a screen's size, scaled to its glass, resolving once a visitor can use it |
 | `site/demo.js::keepPastDoor` | Presses the Guest tile while the frame is hidden whenever the front door stands; shows the frame at the doors |
 | `site/demo.js::guestTile` / `atDoors` | The front door's Guest tile when pressable; whether the doors question stands |
@@ -780,12 +804,13 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tools/build_demo.py::client` | Matinee's own app in process on a copy of the film table; the table's record of the library replaces the media server; no synopsis |
 | `tools/build_demo.py::Library` | The library as the table recorded it; answers no synopsis |
 | `tools/build_demo.py::record` | The boot replies, the Guest profile, the first screen, every walk and one pick template, all as "only what we can watch" |
-| `tools/build_demo.py::walk_door` | Walks every answer path behind one door and records each step's reply |
-| `tools/build_demo.py::branches` | A door's branches: its first answers, or `_` |
+| `tools/build_demo.py::SUBGENRE` / `walk_door` | A door's subgenre question under its opening line, the questions before it answered with their broadest answer, each answer ending its path |
+| `tools/build_demo.py::MOST_ANSWERS` / `SHOWN` / `shown` | At most four answers a question; a longer one shows the answers `SHOWN` names, and one `SHOWN` does not name stops the build |
+| `tools/build_demo.py::paths` | A door's paths: its subgenre answers, or `_` |
 | `tools/build_demo.py::usable_poster` | A real poster: width over height between 0.6 and 0.75 |
-| `tools/build_demo.py::Revealable.allows` | Real poster, backdrop, year 1985 or later, and labelled behind the door (Documentaries by Matinee's rule) |
-| `tools/build_demo.py::choose_all` / `choose` | Keeps listed films that still qualify, reserves them first, fills the rest with the most-voted films, keeps each branch's three in film-id order, with no film in two branches |
-| `tools/build_demo.py::check_reveal` | Refuses a branch without three films, a film off its branch, or a film in two branches |
+| `tools/build_demo.py::Revealable.allows` | Real poster, backdrop, year 1960 or later, and labelled behind the door (Documentaries by Matinee's rule) |
+| `tools/build_demo.py::choose_all` / `choose` | Keeps listed films that still qualify, reserves them first, fills the rest with each era's most-voted film, then the most-voted, keeps each path's three in film-id order, with no film in two paths |
+| `tools/build_demo.py::check_reveal` | Refuses a path without three films, a film off its path, or a film in two paths |
 | `tools/build_demo.py::card` | A card linked to TMDB with no synopsis and no backdrop path |
 | `tools/build_demo.py::canned_files` | The canned files in memory: walls of real-poster films in film-id order, the first wall as every door's films, `source` null |
 | `tools/build_demo.py::PRIVATE_FIELDS` / `private_fields` / `leaks` | Refuses a private field by name, a setting's value, a folder marker or an item id before anything is written |
@@ -793,7 +818,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tools/build_demo.py::write_canned` | Swaps the canned set in whole; restores an interrupted swap |
 | `tools/build_demo.py::prune` | Removes the pictures of films no longer shown, last |
 | `tools/build_demo.py::main` | The order: pictures, canned files, film list by rename, prune |
-| `tools/demo-films.json` | Three films per branch and the films the site never shows |
+| `tools/demo-films.json` | Three films per path and the films the site never shows |
 
 ### Tests and the gate
 
@@ -808,9 +833,10 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again" |
 | `tests/page-copy.test.mjs` | The copy against `PAGE_FILES`, and against the commit where a checkout is at hand |
 | `tests/stand-in.test.mjs` | Every walk key, the cycle, the boot replies, failures and the retry |
-| `tests/canned.test.mjs` | The canned files' completeness, branch membership, links, picture source, pictures and privacy |
-| `tests/demo-walk.test.mjs` | Every branch walked to a pick and round its films, on a desktop and a phone |
+| `tests/canned.test.mjs` | The canned files' completeness, path membership, links, picture source, pictures and privacy |
+| `tests/demo-walk.test.mjs` | Every path walked to a pick and round its films, on a desktop and a phone |
 | `tests/frames.test.mjs` | No front door ever visible in a frame; the late monitor |
 | `tests/mirror.test.mjs` | Both screens keep step through walks, picks, menus, About, reloads and the wheel |
+| `tests/deck-held.test.mjs` | A walk to a pick inside a frame leaves the deck where it stands, in Firefox |
 | `tests/phone-demo.test.mjs` | The phone's full-screen demo, its chip and Back |
 | `.nojekyll` | Pages serves the files as they stand |

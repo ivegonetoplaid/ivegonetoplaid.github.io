@@ -76,9 +76,7 @@ const named = (frame, say) => frame.getByRole("button", { name: new RegExp(`^${s
 test("a walk made on the desktop moves the phone, to the pick, round its films and back to the start", { timeout: 300000 }, async () => {
   const { context, trouble, desk, phone } = await open();
   await named(desk, "Comedy").click();
-  let now = await same(desk, phone, (s) => s.answers.length > 0 && /respectable/i.test(s.line));
-  await named(desk, now.answers[0]).click();
-  now = await same(desk, phone, (s) => s.answers.length > 0 && !/respectable/i.test(s.line));
+  let now = await same(desk, phone, (s) => s.answers.length > 0 && /foolishness/i.test(s.line));
   await named(desk, now.answers[1]).click();
   now = await same(desk, phone, (s) => s.film !== null);
   const seen = [now.film];
@@ -96,20 +94,17 @@ test("a walk made on the desktop moves the phone, to the pick, round its films a
 test("a walk made on the phone moves the desktop, and the phone's Back and the desktop's trail move both", { timeout: 300000 }, async () => {
   const { context, trouble, desk, phone } = await open();
   await named(phone, "Horror").click();
-  let now = await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.answers.length > 0);
-  await named(phone, now.answers[0]).click();
-  now = await same(desk, phone, (s) => /blood/i.test(s.line) && s.answers.length > 0);
-  const gore = now.line;
-  await phone.locator(".way-back button", { hasText: "Back" }).click();
-  await same(desk, phone, (s) => /nightmare/i.test(s.line));
-  await named(phone, now.answers.length ? (await screenOf(phone)).answers[0] : "").click();
-  await same(desk, phone, (s) => s.line === gore);
+  const asked = await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.answers.length > 2);
+  await named(phone, asked.answers[0]).click();
+  await same(desk, phone, (s) => s.film !== null);
+  await phone.locator("button.back").click();
+  await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.film === null);
+  await named(phone, asked.answers[1]).click();
+  const first = await same(desk, phone, (s) => s.film !== null);
   await desk.locator(".trail button.crumb").last().click();
-  await same(desk, phone, (s) => /nightmare/i.test(s.line));
-  await named(desk, (await screenOf(desk)).answers[1]).click();
-  now = await same(desk, phone, (s) => /blood/i.test(s.line));
-  await named(phone, now.answers[0]).click();
-  await same(desk, phone, (s) => s.film !== null || /decade|era/i.test(s.line));
+  await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.film === null);
+  await named(desk, asked.answers[2]).click();
+  await same(desk, phone, (s) => s.film !== null && s.film !== first.film);
   assert.deepEqual(trouble, []);
   await context.close();
 });
@@ -188,9 +183,6 @@ test("at full motion the screens keep step through a pick and Not that one", { t
   const { context, trouble, desk, phone } = await open({ motion: "no-preference" });
   await named(desk, "For the kids").click();
   let now = await same(desk, phone, (s) => s.answers.length > 0 && !s.answers.includes("Comedy"));
-  const age = now.line;
-  await named(desk, now.answers[0]).click();
-  now = await same(desk, phone, (s) => s.answers.length > 0 && s.film === null && s.line !== age);
   await named(phone, now.answers[0]).click();
   now = await same(desk, phone, (s) => s.film !== null);
   await desk.getByRole("button", { name: "Not that one" }).click();

@@ -54,11 +54,13 @@ body {
   white-space: nowrap;
 }
 
-/* The page never scrolls; the slides are layers over the curtain. */
+/* The page never scrolls; the slides are layers over the curtain. Clipped rather than hidden, so nothing can
+   scroll it either: Matinee's pick brings its card into view, and in Firefox and Safari that reaches out of the
+   frame to every box around it. */
 .deck {
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  overflow: clip;
 }
 
 /* One curtain behind everything: the rendered velvet, the tall crop on a screen taller than 3:4, over a curtain

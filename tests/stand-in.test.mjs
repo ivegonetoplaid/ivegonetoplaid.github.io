@@ -1,5 +1,5 @@
 // The stand-in api.js on its own, with the canned files served from disk: it answers every canned walk step by
-// its answers, cycles each branch's three films without end, answers each film card and the boot replies, and
+// its answers, cycles each path's three films without end, answers each film card and the boot replies, and
 // answers a call it has no canned file for as a failure the page can show, not as a crash.
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
@@ -35,14 +35,14 @@ test("every canned walk step is answered by its answers", async () => {
   }
 });
 
-test("each branch's films come round in turn without end, and before a branch every branch of the door deals", async () => {
+test("each path's films come round in turn without end, and before a path every path of the door deals", async () => {
   const picks = read("picks.json");
-  for (const [branch, replies] of Object.entries(picks)) {
-    const [tree, answer] = branch.split("/");
+  for (const [path, replies] of Object.entries(picks)) {
+    const [tree, answer] = path.split("/");
     const answers = answer === "_" ? [] : answersOf(answer);
     for (let seen = 0; seen < 7; seen++) {
       const got = await api.post("/api/pick", { tree, answers, seen: Array(seen).fill(1) });
-      assert.equal(got.data.film.tmdb, replies[seen % 3].film.tmdb, `${branch} after ${seen}`);
+      assert.equal(got.data.film.tmdb, replies[seen % 3].film.tmdb, `${path} after ${seen}`);
     }
   }
   const door = Object.keys(picks).filter((n) => n.startsWith("comedy/")).flatMap((n) => picks[n]);

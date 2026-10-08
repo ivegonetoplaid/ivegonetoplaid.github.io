@@ -2,23 +2,40 @@
 // the canned files under /canned/, recorded from Matinee's own server, and comes back as { ok, status, data } as
 // the real helpers' calls do. Nothing here talks to a server.
 //
-// The walk is answered by its answers; a pick by its branch (the door's first answer): each branch reveals its
-// three films in turn, without end, and "Just pick one!" before a branch is chosen deals from every branch of
+// The walk is answered by its answers; a pick by its path (the door's subgenre answer): each path reveals its
+// three films in turn, without end, and "Just pick one!" before a path is chosen deals from every path of
 // the door, or of every door.
 
-// The demo's two screens show one demo, so they say the same lines. The page's quip deck shuffles with
-// Math.random, which it reads once, when it starts; this module is read before it. So every shuffle the deck
-// makes draws from one fixed sequence, the same in every frame, while every other use of Math.random (the wall)
-// stays random.
+// The demo's two screens show one demo, so they say the same lines and hunt to the same rhythm. The page's quip
+// deck and its hunt planner draw from Math.random, which they read when they run; this module is read before
+// them. So every shuffle the deck makes draws from one fixed sequence, and every hunt plans from a second one,
+// started afresh at each pick from that pick's place in the walk: the same in every frame, so both screens take
+// the same hops for the same times. Every other use of Math.random (the wall's order) stays random.
 const native = Math.random;
-let seed = 0x6d61746e; // any fixed number; the same in every frame
-function seeded() {
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+function sequence(start) {
+  let seed = start;
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
-Math.random = () => (/\/quips\.js/.test(new Error().stack || "") ? seeded() : native());
+const quipDraw = sequence(0x6d61746e); // any fixed number; the same in every frame
+let huntDraw = sequence(0);
+Math.random = () => {
+  const stack = new Error().stack || "";
+  if (/\/quips\.js/.test(stack)) return quipDraw();
+  if (/\/hunt-plan\.js/.test(stack)) return huntDraw();
+  return native();
+};
+
+// A number for a pick's place in the walk, the same in every frame that makes it.
+function placeOf(text) {
+  let h = 0x811c9dc5;
+  for (let k = 0; k < text.length; k += 1) h = Math.imul(h ^ text.charCodeAt(k), 0x01000193);
+  return h;
+}
 
 const files = new Map();
 
@@ -47,21 +64,23 @@ const missing = (what) => reply({ error: "not_found", message: `The demo has no 
 // The walk's answers as the canned walk keys them: question:option, joined with commas.
 const keyOf = (answers = []) => answers.map((a) => `${a.question}:${a.option}`).join(",");
 
-// The films a pick deals from, as the branches' names in picks.json.
+// The films a pick deals from, as the paths' names in picks.json.
 function dealFrom(picks, tree, answers = []) {
   const names = Object.keys(picks);
   if (!tree) return names;
   const door = names.filter((n) => n.startsWith(`${tree}/`));
   if (!answers.length) return door;
-  const branch = `${tree}/${keyOf(answers.slice(0, 1))}`;
-  return names.includes(branch) ? [branch] : door;
+  const path = `${tree}/${keyOf(answers.slice(0, 1))}`;
+  return names.includes(path) ? [path] : door;
 }
 
 async function pick(body) {
   const picks = await canned("picks.json");
   const deal = dealFrom(picks, body.tree, body.answers).flatMap((n) => picks[n]);
   if (!deal.length) return missing("that pick");
-  return reply(deal[(body.seen || []).length % deal.length]);
+  const seen = (body.seen || []).length;
+  huntDraw = sequence(placeOf(`${body.tree}/${keyOf(body.answers)}/${seen}`));
+  return reply(deal[seen % deal.length]);
 }
 
 async function walk(body) {

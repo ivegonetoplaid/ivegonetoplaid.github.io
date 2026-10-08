@@ -137,7 +137,7 @@ const phone = mountDemo(document.getElementById("phone-glass"), { width: 390, he
 // on meanwhile, starts again with it.
 function mountDesk(late) {
   wide.removeEventListener("change", widened);
-  const desk = mountDemo(document.getElementById("desk-glass"), { width: 1280, height: 800, title: "Matinee on a desktop" });
+  const desk = mountDemo(document.getElementById("desk-glass"), { width: 1680, height: 1050, title: "Matinee on a desktop" });
   Promise.all([phone, desk]).then((frames) => {
     const joined = mirror(frames);
     if (late) joined.resync();

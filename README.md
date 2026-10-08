@@ -18,7 +18,7 @@ site.
   those checksums everywhere, and checks the checksums against the commit itself only where a Matinee checkout is
   at hand (`MATINEE_CHECKOUT`, or a `matinee` folder beside this one); elsewhere that half is skipped.
 - `tools/build_demo.py` rebuilds the canned replies and the pictures from a Matinee checkout, a film table and the
-  film folders; its docstring says how. `tools/demo-films.json` lists the films each branch reveals, and `exclude`
+  film folders; its docstring says how. `tools/demo-films.json` lists the films each path reveals, and `exclude`
   names any film the site must not show: removing a film is one entry there and a rebuild.
 
 ## Licence and the pictures

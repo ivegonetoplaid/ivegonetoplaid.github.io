@@ -10,9 +10,10 @@ Settings, read from the environment and never written out:
   FILM_TABLE   a films.sqlite that Matinee's nightly rebuild wrote with a library
   FILM_DIRS    the film folders, colon-separated; each film's folder name carries `{tmdb-N}`
 
-The films the demo reveals are listed in tools/demo-films.json, three per branch (a door's first answer), with
-`exclude` naming any film the site must never show. A branch with no list gets three films chosen here, and the
-file is written back. Removing a film is one entry under `exclude`; the next build drops it and its pictures.
+The demo's paths are short: a genre, then its subgenre, then the reveal. Any question Matinee asks before the
+subgenre is answered silently with its broadest answer. The films each path reveals are listed in
+tools/demo-films.json, three per path, with `exclude` naming any film the site must never show. A path with no
+list gets three films chosen here, old and new alike, and the file is written back. Removing a film is one entry under `exclude`; the next build drops it and its pictures.
 
 Usage: FILM_TABLE=... FILM_DIRS=... <matinee>/.venv/bin/python tools/build_demo.py
 """
@@ -49,13 +50,25 @@ IMG = SITE / "img"
 FILMS_FILE = SITE / "tools" / "demo-films.json"
 DOORS = ("comedy", "horror", "scifi", "kids", "nonfiction")  # the demo's doors, in the doors question's order
 RULED = {"nonfiction"}  # doors whose films Matinee places by its own rule, not by the labels
+MOST_ANSWERS = 4  # the most answers a question shows in the demo, so none scrolls inside its screen
+# Each genre's subgenre question, the one question the demo asks; a genre missing here asks nothing.
+SUBGENRE = {"comedy": "kind", "horror": "flavour", "scifi": "kind", "kids": "kind"}
+# The answers a longer question keeps, by door and question, as Matinee's option indexes: the mainstream ones.
+SHOWN = {
+    ("comedy", "kind"): (0, 1, 4, 7),  # slapstick, something sweet, wisecracks and explosions, love and charm
+    ("horror", "flavour"): (0, 1, 2, 4),  # ghosts, a killer on the loose, monsters, make me laugh
+    ("scifi", "kind"): (0, 1, 2, 4),  # space, time travel and robots, dystopias, superheroes
+    ("kids", "kind"): (0, 1, 2, 3),  # silly, a big adventure, magic, talking animals
+}
 GUEST = {"name": "Guest", "avatar": "popcorn"}
 POSTER_WIDTHS = IMAGE_WIDTHS["poster"]
 BACKDROP_WIDTHS = {"l": IMAGE_WIDTHS["backdrop"]["l"]}  # the only backdrop size the page asks for
 MAGICK_S = 120  # the most one picture command may take
 STAMP = IMG / ".made-with.json"  # the widths and quality the pictures were made with
 POSTER_RATIO = (0.6, 0.75)  # width over height of a real poster; a video frame is wide
-MODERN = 1985  # a revealed film is from this year or later
+OLDEST = 1960  # a revealed film is from this year or later
+# The eras a path's three films are spread across, one each where the era has a film: (first year, last year).
+ERAS = ((OLDEST, 1999), (2000, 2011), (2012, 9999))
 QUALITY = 72
 TMDB_FILM = "https://www.themoviedb.org/movie"
 
@@ -152,17 +165,52 @@ class Walks:
     steps: dict[str, Any]
 
 
+def shown(tree: str, question: dict[str, Any]) -> list[dict[str, Any]]:
+    """The answers `question` shows in the demo: all of them up to MOST_ANSWERS, else the ones SHOWN names. A longer
+    question SHOWN does not name, or names an answer Matinee no longer offers, stops the build."""
+    options = question["options"]
+    if len(options) <= MOST_ANSWERS:
+        return options
+    keep = SHOWN.get((tree, question["id"]))
+    if keep is None:
+        raise SystemExit(f"{tree}/{question['id']} offers {len(options)} answers; name the {MOST_ANSWERS} it shows in SHOWN")
+    kept = [o for o in options if o["index"] in keep]
+    if len(kept) != len(keep):
+        raise SystemExit(f"{tree}/{question['id']} no longer offers every answer SHOWN names")
+    return kept
+
+
 def walk_door(c: TestClient, viewer: dict[str, int], tree: str) -> Walks:
-    steps: dict[str, Any] = {}
-    todo: list[list[dict[str, Any]]] = [[]]
-    while todo:
-        answers = todo.pop()
-        body = {"tree": tree, "answers": answers, "viewer": viewer, "source": "held"}
-        step = ok(c.post("/api/walk", json=body))
-        steps[key(answers)] = step
-        question = step["question"]
-        if question:
-            todo += [[*answers, {"question": question["id"], "option": o["index"]}] for o in question["options"]]
+    """A genre's demo paths: its opening line with its subgenre question, and each shown subgenre answer as the end
+    of a path. A question Matinee asks before the subgenre takes its broadest answer, the one leaving the most films,
+    and is never shown."""
+
+    def walk(answers: list[dict[str, Any]]) -> Any:
+        return ok(c.post("/api/walk", json={"tree": tree, "answers": answers, "viewer": viewer, "source": "held"}))
+
+    def answer(question: dict[str, Any], option: dict[str, Any]) -> dict[str, Any]:
+        return {"question": question["id"], "option": option["index"]}
+
+    opening = walk([])
+    if tree not in SUBGENRE:
+        return Walks(tree, {"": {**opening, "question": None}})
+    before: list[dict[str, Any]] = []
+    step = opening
+    while step["question"] and step["question"]["id"] != SUBGENRE[tree]:
+        q = step["question"]
+        replies = {o["index"]: walk([*before, answer(q, o)]) for o in q["options"]}
+        broadest = max(q["options"], key=lambda o: len(replies[o["index"]]["pool"]))
+        before.append(answer(q, broadest))
+        step = replies[broadest["index"]]
+    question = step["question"]
+    if question is None:
+        raise SystemExit(f"{tree} never asks its subgenre question {SUBGENRE[tree]}")
+    options = shown(tree, question)
+    # A footnote explains an answer's asterisk; it goes when no answer left carries one.
+    footnote = question.get("footnote") if any("*" in o["say"] for o in options) else None
+    steps = {"": {**step, "line": opening["line"], "question": {**question, "options": options, "footnote": footnote}}}
+    for o in options:
+        steps[key([answer(question, o)])] = {**walk([*before, answer(question, o)]), "question": None}
     return Walks(tree, steps)
 
 
@@ -170,8 +218,8 @@ def key(answers: list[dict[str, Any]]) -> str:
     return ",".join(f"{a['question']}:{a['option']}" for a in answers)
 
 
-def branches(walks: Walks) -> dict[str, list[int]]:
-    """Each branch of a door (its first answer, or "_" for a door that asks nothing) and the films behind it."""
+def paths(walks: Walks) -> dict[str, list[int]]:
+    """Each demo path of a genre (its subgenre answer, or "_" for a genre that asks nothing) and the films at its end."""
     first = walks.steps[""]
     if not first["question"]:
         return {"_": first["pool"]}
@@ -188,7 +236,7 @@ def usable_poster(dims: dict[Path, tuple[int, int]], folder: Folder | None) -> b
 
 @dataclass(frozen=True)
 class Revealable:
-    """What a film needs to be revealed: a real poster and a backdrop on disk, a year no earlier than MODERN, and,
+    """What a film needs to be revealed: a real poster and a backdrop on disk, a year no earlier than OLDEST, and,
     on a door the labels place, a place behind that door in the labels."""
 
     fit: set[int]
@@ -199,17 +247,24 @@ class Revealable:
     def allows(self, tree: str, tmdb: int) -> bool:
         if tmdb not in self.fit or tmdb not in self.backdrops or tmdb not in self.films.index:
             return False
-        if (self.films.at[tmdb, "year"] or 0) < MODERN:
+        if (self.films.at[tmdb, "year"] or 0) < OLDEST:
             return False
         return tree in RULED or tmdb in self.labelled[tree]
 
 
 def choose(tree: str, pool: list[int], need: int, taken: set[int], can: Revealable) -> list[int]:
-    """`need` films to reveal from `pool`, the most-voted first, none revealed by another branch."""
+    """`need` films to reveal from `pool`, none revealed by another path: the most-voted film of each era in ERAS
+    that has one, then the most-voted of the rest."""
     ids = [t for t in pool if t not in taken and can.allows(tree, t)]
-    chosen = [int(t) for t in can.films.loc[ids].sort_values("vote_count", ascending=False).index[:need]]
+    ranked = [int(t) for t in can.films.loc[ids].sort_values("vote_count", ascending=False).index]
+    chosen: list[int] = []
+    for first, last in ERAS:
+        era = [t for t in ranked if first <= (can.films.at[t, "year"] or 0) <= last]
+        if era and len(chosen) < need:
+            chosen.append(era[0])
+    chosen += [t for t in ranked if t not in chosen][: need - len(chosen)]
     if len(chosen) < need:
-        raise SystemExit(f"{tree} has too few films to reveal for a branch; list three by hand in {FILMS_FILE.name}")
+        raise SystemExit(f"{tree} has too few films to reveal for a path; list three by hand in {FILMS_FILE.name}")
     return chosen
 
 
@@ -326,10 +381,10 @@ def record(c: TestClient) -> Recorded:
 
 
 def choose_all(rec: Recorded, plan: dict[str, Any], can: Revealable) -> dict[str, list[int]]:
-    """Three films per branch. A listed film is kept while it is behind its branch and may be revealed; every kept
-    film is reserved first, so a branch that needs more takes only films no other branch keeps."""
+    """Three films per path. A listed film is kept while it is at the end of its path and may be revealed; every
+    kept film is reserved first, so a path that needs more takes only films no other path keeps."""
     exclude = set(plan["exclude"])
-    pools = {f"{tree}/{b}": (tree, pool) for tree, w in rec.walks.items() for b, pool in branches(w).items()}
+    pools = {f"{tree}/{b}": (tree, pool) for tree, w in rec.walks.items() for b, pool in paths(w).items()}
     kept = {
         name: [t for t in plan["reveal"].get(name, []) if t in pool and t not in exclude and can.allows(tree, t)][:3]
         for name, (tree, pool) in pools.items()
@@ -345,8 +400,8 @@ def choose_all(rec: Recorded, plan: dict[str, Any], can: Revealable) -> dict[str
 
 
 def check_reveal(reveal: dict[str, list[int]], pools: dict[str, tuple[str, list[int]]]) -> None:
-    """Refuses a reveal list that breaks the demo: a branch without exactly three films, a film behind another
-    branch, or a film in two branches."""
+    """Refuses a reveal list that breaks the demo: a path without exactly three films, a film off its path, or a
+    film on two paths."""
     seen: dict[int, str] = {}
     for name, films in reveal.items():
         if len(films) != 3:
