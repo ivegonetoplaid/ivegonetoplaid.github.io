@@ -176,6 +176,9 @@ stands.
 - The headline's accessible name is "Matinee. Now showing: whatever you're in the
   mood for." A drawing that fails to load leaves that name in place and logs a
   warning.
+- The marquee waits for no other script. The page's head starts the drawing its
+  width shows downloading with the page, the marquee's own script imports
+  nothing and runs first, and each drawing is laid in as it arrives.
 - The line reads "Can't decide what to watch?" in gold, then "Tell me the mood.
   A few questions later, you'll have tonight's film." in cream.
 - The paragraph reads: "Matinee picks from your Jellyfin or Plex film library,
@@ -562,7 +565,7 @@ being true.
   demo's poster sentence, the Plex, Jellyfin and TMDB credits, and the poster
   notice last. The About takes the keys, and Back closes it. The site's own
   words (`index.html` and `README.md`) never say "roll again". Before the deck's
-  script arrives, only the first slide shows.
+  script arrives, the marquee stands and only the first slide shows.
 - **The borrowed files** (`tests/page-copy.test.mjs`): `static/` holds exactly
   the files `PAGE_FILES` lists, and every one matches its checksum. Where a
   Matinee checkout is
@@ -759,7 +762,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `site/site.css` | The curtain, the slides' layout and fit, the drawn monitor and phone, the poster cases, the ticket, the scrim, the phone layout at 600 px, reduced motion, and the frames' fade |
 | `site/site.css::.handset .demo-frame` | On a phone the drawn phone is a preview that takes no input |
 | `site/site.css::.demo-chip` | The "Demo ✕" chip at the top centre, clear of Matinee's bar |
-| `site/site.js::marquee` | Lays Matinee's wide and narrow marquee drawings into slide one from the borrowed files |
+| `site/marquee.js` | Lays Matinee's wide and narrow marquee drawings into slide one from the borrowed files, ahead of every other script |
 | `site/site.js::overlay` | An overlay is a history step: Back closes it, and its own close steps back over every step since it opened |
 | `site/site.js::openDemo` | Makes the full-screen frame on first open, keeps it, and opens the overlay |
 | `site/site.js::mountDesk` | The monitor's frame on a wide screen, or once when the window widens; it joins where the phone stands |
@@ -820,7 +823,7 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `eslint.config.js` | Matinee's lint rules over the site's scripts and the tests |
 | `tests/serve.mjs::serve` | A static server that answers as GitHub Pages does |
 | `tests/deck.test.mjs` | The deck's gestures, judged by where the slides stand |
-| `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again", only the first slide before the deck's script |
+| `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again", the marquee and only the first slide before the deck's script |
 | `tests/page-copy.test.mjs` | The borrowed files against `PAGE_FILES`, and against the commit where a checkout is at hand |
 | `tests/canned.test.mjs` | The canned files' completeness, path membership, pictures and privacy |
 | `tests/demo-walk.test.mjs` | One path walked to a pick and round its films on a desktop and a phone; each door's first screen on the desktop; the canned set fetched whole; a failed load; a hunt left behind |

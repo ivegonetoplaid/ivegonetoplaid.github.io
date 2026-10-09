@@ -1,25 +1,8 @@
-// The site's page: the deck over the curtain, Matinee's marquee on the first slide, and About over everything.
+// The site's page: the deck over the curtain and About over everything. The marquee loads on its own (marquee.js).
 import { deck } from "./deck.js";
 import { conductor } from "./conductor.js";
 import { mountDemo } from "./demo.js";
 
-
-// The marquee: Matinee's own drawing, wide and narrow, laid into the page so its bulbs chase; the stylesheet
-// shows one. Its letter board already reads "Now showing" over "Whatever you're in the mood for".
-async function marquee() {
-  const holder = document.getElementById("marquee");
-  for (const key of ["wide", "narrow"]) {
-    const res = await fetch(`/static/marquee/marquee-${key}.svg`);
-    if (!res.ok) throw new Error(`the marquee drawing ${key} answered ${res.status}`);
-    const doc = new DOMParser().parseFromString(await res.text(), "image/svg+xml");
-    const svg = document.importNode(doc.documentElement, true);
-    svg.setAttribute("aria-hidden", "true");
-    const frame = document.createElement("div");
-    frame.className = `mq-frame mq-frame-${key}`;
-    frame.append(svg);
-    holder.append(frame);
-  }
-}
 
 // An overlay (About, the phone's demo) opens as a history step, so the browser's Back closes it; while open it
 // takes the wheel, the keys and the touch. Its own close steps back over every history step taken since it
@@ -78,7 +61,6 @@ deck({
   dots: [...document.querySelectorAll(".dots button")],
   busy: () => about.isOpen() || demo.isOpen(),
 });
-marquee().catch((err) => console.warn("The marquee drawing could not be loaded.", err));
 
 // The demo's two screens: a phone always, and a desktop monitor where the screen is wide enough to show one.
 const wide = matchMedia("(min-width: 601px)");

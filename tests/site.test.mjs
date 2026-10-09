@@ -1,7 +1,7 @@
 // The site's slides: each fits without scrolling inside itself from 1024 x 768 up and on phones 390 px wide and
 // wider, the page fetches nothing from any other service, the links reach Matinee's repository, the About ends
 // on the poster notice, the public words never say "roll again", and
-// before the deck's script arrives only the first slide shows.
+// before the deck's script arrives the marquee stands and only the first slide shows.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { after, before, test } from "node:test";
@@ -116,7 +116,7 @@ test("About opens over everything, takes the keys, and Back closes it", async ()
   await page.close();
 });
 
-test("before the deck's script arrives, only the first slide shows", async () => {
+test("before the deck's script arrives, the marquee stands and only the first slide shows", async () => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   let release;
@@ -130,6 +130,8 @@ test("before the deck's script arrives, only the first slide shows", async () =>
   await page.waitForFunction(() => document.querySelector(".s3") && getComputedStyle(document.querySelector(".s3")).position === "absolute");
   const shown = () => page.evaluate(() => [...document.querySelectorAll(".slide")].filter((s) => getComputedStyle(s).visibility === "visible").map((s) => s.getAttribute("aria-label")));
   assert.deepEqual(await shown(), ["Matinee"]);
+  // The marquee is slide one's headline: it waits for no other script.
+  await page.locator("#marquee .mq-frame-wide svg").waitFor({ state: "attached", timeout: 5000 });
   release();
   await page.waitForFunction(() => document.body.dataset.slide === "0");
   await page.locator(".dots button").nth(2).click();
