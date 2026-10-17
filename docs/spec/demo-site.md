@@ -544,6 +544,9 @@ A build cut short at any step leaves the last good set standing.
   from `/canned/`, and its pictures from `/img/`.
 - Every one of these is on the site's own origin. Nothing is fetched from any
   other service.
+- GitHub Pages lets a browser keep each file for 10 minutes. The player asks
+  the site for its canned replies every time, never taking a kept copy
+  unasked, so replies from before a deploy never meet the player it brought.
 
 ## 8. Tests and the gate
 
@@ -568,8 +571,9 @@ contributor's commit runs `./check.sh` alone.
 
 **The test server.** `tests/serve.mjs` serves the repository as GitHub Pages
 does: each file by its extension's type, a file with no extension as
-`application/octet-stream`, `X-Content-Type-Options: nosniff` on every reply,
-and a folder by its `index.html`.
+`application/octet-stream`, `X-Content-Type-Options: nosniff` and
+`Cache-Control: max-age=600` on every reply, and a folder by its `index.html`.
+It counts the requests that reach it, by path.
 
 **What the tests hold.** Each test below fails when its statement stops
 being true.
@@ -618,7 +622,7 @@ being true.
   not appear in time, any request to another origin, and, on the desktop, a
   screen that scrolls inside itself. The corner mark inside
   the demo starts over in place at `/demo/`. The demo fetches every canned file
-  the site carries, and no other. A canned file refused leaves both drawn
+  the site carries, and no other, and a reload asks the site for them again. A canned file refused leaves both drawn
   screens showing and saying the demo did not load. A hunt left by the corner
   mark stops: over the next 2 s the doors wall moves no further sideways and no
   more than 25 px down.
@@ -776,11 +780,15 @@ As the code stood on 2026-10-17.
    poster may show twice on a screen, far apart. A new wall fades in over the
    old where Matinee's posters slide to their new places, and the hunt's first
    hop runs at its table's time where Matinee would slow a long hop down.
+9. **Two live frames on a modest laptop are unmeasured.** No test measures how
+   smoothly the monitor and the phone run together on slow hardware.
 10. **The sheets are fetched on arrival.** All six, about 3.6 MB together,
     load while the first slide shows, so a visitor who never opens the demo
     fetches them too.
-9. **Two live frames on a modest laptop are unmeasured.** No test measures how
-   smoothly the monitor and the phone run together on slow hardware.
+11. **A deploy can leave a browser's scripts a step apart.** For up to 10
+    minutes after a deploy, a browser that kept the old files may run a new
+    page module beside a kept old one. Only the canned replies are always asked
+    for again.
 
 ---
 

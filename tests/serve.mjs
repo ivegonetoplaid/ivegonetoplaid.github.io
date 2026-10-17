@@ -1,5 +1,6 @@
 // A static server for the tests that answers as GitHub Pages does: each file by its extension's type, a file
-// with no extension as application/octet-stream, "nosniff" on every reply, a directory by its index.html.
+// with no extension as application/octet-stream, "nosniff" on every reply, every reply kept 10 minutes
+// ("max-age=600"), a directory by its index.html. It counts the requests that reach it, by path.
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
@@ -31,11 +32,18 @@ async function fileFor(path) {
 
 // Starts the server on a free port and resolves to its origin and a stop function.
 export async function serve() {
+  const hits = new Map();
   const server = createServer(async (req, res) => {
-    const file = await fileFor(new URL(req.url, "http://x").pathname);
+    const path = new URL(req.url, "http://x").pathname;
+    hits.set(path, (hits.get(path) || 0) + 1);
+    const file = await fileFor(path);
     try {
       const body = await readFile(file);
-      res.writeHead(200, { "Content-Type": TYPES[extname(file)] || "application/octet-stream", "X-Content-Type-Options": "nosniff" });
+      res.writeHead(200, {
+        "Content-Type": TYPES[extname(file)] || "application/octet-stream",
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "max-age=600",
+      });
       res.end(body);
     } catch {
       res.writeHead(404, { "Content-Type": "text/plain" });
@@ -43,5 +51,5 @@ export async function serve() {
     }
   });
   await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
-  return { origin: `http://127.0.0.1:${server.address().port}`, stop: () => new Promise((ok) => server.close(ok)) };
+  return { origin: `http://127.0.0.1:${server.address().port}`, hits, stop: () => new Promise((ok) => server.close(ok)) };
 }
