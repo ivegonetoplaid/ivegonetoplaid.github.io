@@ -1,6 +1,7 @@
-// The demo's canned files: every answer a canned question offers leads to a canned step; every film a screen
-// shows has its poster at each size the page asks for; every revealed film has its backdrop and the demo's own
-// synopsis; each path reveals three films and no film is revealed by two paths.
+// The demo's canned files: every answer a canned question offers leads to a canned step; every wall has its sheet;
+// every revealed film has its poster, its backdrop and the demo's own synopsis; each path reveals three films and no
+// film is revealed by two paths. That a revealed film stands behind its path is the builder's to refuse
+// (tools/build_demo.py check_reveal): the site carries each screen's wall, never its whole pool.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -11,6 +12,8 @@ const read = (name) => JSON.parse(readFileSync(join(ROOT, "canned", name), "utf8
 const walks = Object.fromEntries(readdirSync(join(ROOT, "canned/walk")).map((f) => [f.replace(".json", ""), read(`walk/${f}`)]));
 const picks = read("picks.json");
 const first = read("first.json");
+const walls = [first.wall, ...Object.values(walks).flatMap((steps) => Object.values(steps).map((s) => s.wall))];
+const revealed = new Set(Object.values(picks).flatMap((rs) => rs.map((r) => String(r.film.tmdb))));
 
 test("the demo opens five doors on the doors question, with no source question", () => {
   assert.deepEqual(first.options.map((o) => o.tree), ["comedy", "horror", "scifi", "kids", "nonfiction"]);
@@ -43,10 +46,9 @@ test("each path reveals three films, no film twice, each with its backdrop and t
   }
 });
 
-test("every film a screen shows has its poster at every size", () => {
-  const shown = new Set([...first.pool, ...Object.values(walks).flatMap((s) => Object.values(s).flatMap((x) => x.pool))]);
-  const missing = [...shown].filter((t) => !["xs", "s", "m", "l"].every((size) => existsSync(join(ROOT, "img/poster", String(t), size))));
-  assert.deepEqual(missing, []);
+test("every wall has its sheet and every revealed film its poster", () => {
+  assert.deepEqual(walls.filter((w) => !existsSync(join(ROOT, w.sheet.slice(1)))).map((w) => w.sheet), []);
+  assert.deepEqual([...revealed].filter((t) => !existsSync(join(ROOT, "img/poster", t, "l"))), []);
 });
 
 test("the canned files hold nothing from the operator's machines", () => {
@@ -62,19 +64,11 @@ test("the canned files hold nothing from the operator's machines", () => {
   }
 });
 
-test("each revealed film stands behind its own path", () => {
-  for (const [path, replies] of Object.entries(picks)) {
-    const [tree, answer] = path.split("/");
-    const pool = new Set(walks[tree][answer === "_" ? "" : answer].pool);
-    for (const r of replies) assert.ok(pool.has(r.film.tmdb), `${r.film.title} is not behind ${path}`);
-  }
-});
-
-test("the pictures hold no film that no screen shows", () => {
-  const shown = new Set([...first.pool, ...Object.values(walks).flatMap((s) => Object.values(s).flatMap((x) => x.pool))].map(String));
-  const revealed = new Set(Object.values(picks).flatMap((rs) => rs.map((r) => String(r.film.tmdb))));
-  assert.deepEqual(readdirSync(join(ROOT, "img/poster")).filter((d) => !shown.has(d)), []);
+test("the pictures hold nothing no screen shows", () => {
+  const sheets = new Set(walls.map((w) => w.sheet.split("/").pop()));
+  assert.deepEqual(readdirSync(join(ROOT, "img/poster")).filter((d) => !revealed.has(d)), []);
   assert.deepEqual(readdirSync(join(ROOT, "img/backdrop")).filter((d) => !revealed.has(d)), []);
+  assert.deepEqual(readdirSync(join(ROOT, "img/wall")).filter((f) => !sheets.has(f)), []);
 });
 
 // Fields that only ever carry something from the operator's machines, whatever their values look like.

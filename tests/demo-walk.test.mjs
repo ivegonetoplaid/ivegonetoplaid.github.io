@@ -1,6 +1,6 @@
 // The demo's player served from the site, driven headless. One path is walked whole on a phone and on a
-// desktop: the door, its answer, the reveal, "Not that one" round the path's three films and back to the first,
-// then "Start over". Every door's first screen is opened once on the desktop, where it must not scroll inside
+// desktop: the door, its answer, the reveal, "Show me another" round the path's three films and back to the first,
+// then the corner mark back to the doors. Every door's first screen is opened once on the desktop, where it must not scroll inside
 // itself. Every path runs the same player code; the canned test checks each path's data without a browser.
 // A walk fails on a page error or an unhandled rejection, a step whose next screen does not appear in time, a
 // desktop screen that scrolls inside itself, and any request to an origin other than the site's own.
@@ -76,7 +76,7 @@ async function press(page, button) {
   await button.click({ timeout: STEP_MS });
   await page.waitForFunction(
     () => {
-      const picked = [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Not that one" && b.offsetParent);
+      const picked = [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Show me another" && b.offsetParent);
       const fresh = document.querySelector(".answers:not([hidden])");
       return picked || Boolean(fresh && fresh !== window.__old && fresh.querySelector(".letterbox, .pail"));
     },
@@ -90,7 +90,7 @@ async function walkTo(page, say) {
   if (say) await press(page, named(page, say));
   for (let i = 0; i < 6; i++) {
     await noInnerScroll(page, `${say} step ${i}`);
-    if (await page.getByRole("button", { name: "Not that one" }).isVisible()) return;
+    if (await page.getByRole("button", { name: "Show me another" }).isVisible()) return;
     await press(page, page.locator(".answers .letterbox, .answers .pail").first());
   }
   throw new Error("the walk did not reach a pick");
@@ -116,14 +116,14 @@ async function walkPath(page, door) {
   await walkTo(page, path.say);
   const titles = [await pickedTitle(page)];
   for (let i = 0; i < 3; i++) {
-    await page.getByRole("button", { name: "Not that one" }).click({ timeout: STEP_MS });
+    await page.getByRole("button", { name: "Show me another" }).click({ timeout: STEP_MS });
     await page.locator(".film-title", { hasNotText: titles.at(-1) }).first().waitFor({ timeout: STEP_MS });
     titles.push(await pickedTitle(page));
   }
   const expected = picks[`${door.tree}/${path.name}`].map((r) => [r.film.title, r.film.year].filter(Boolean).join(" "));
   assert.deepEqual(titles, [...expected, expected[0]], `${door.tree}/${path.name} cycles its three films`);
   await noProblem(page, `${door.tree}/${path.name}`);
-  await page.getByRole("button", { name: "Start over" }).first().click({ timeout: STEP_MS });
+  await page.locator(".wordmark").click({ timeout: STEP_MS });
   await atDoors(page);
 }
 
@@ -190,7 +190,7 @@ test("a canned file that does not arrive leaves both screens saying so", async (
   await context.close();
 });
 
-test("a hunt left by the trail stops: the doors wall only drifts", { timeout: 60000 }, async () => {
+test("a hunt left by the corner mark stops: the doors wall only drifts", { timeout: 60000 }, async () => {
   const context = await browser.newContext({ viewport: { width: 1680, height: 1050 }, reducedMotion: "no-preference" });
   const page = await context.newPage();
   await page.goto(`${site.origin}/demo/`);
@@ -198,7 +198,7 @@ test("a hunt left by the trail stops: the doors wall only drifts", { timeout: 60
   const answers = page.locator(".answers:not([hidden]) .letterbox");
   await answers.first().click({ timeout: STEP_MS });
   await page.waitForTimeout(2200); // the gold line has typed and its read has passed: the hunt is under way
-  await page.locator("button.crumb").first().click({ timeout: STEP_MS });
+  await page.locator(".wordmark").click({ timeout: STEP_MS });
   await page.waitForTimeout(300);
   const at = () => page.evaluate(() => [...document.querySelectorAll(".wall-tiles")].at(-1).style.transform.match(/-?[\d.]+/g).map(Number));
   const [x0, y0] = await at();

@@ -11,8 +11,10 @@ cd "$(dirname "$0")/.."
 checkout="$1"
 commit="$(git -C "$checkout" rev-parse "${2:-HEAD}")"
 src=src/matinee/web/static
-keep=(css fonts avatars icons marquee credits grain.svg blank.svg
-  js/dom.js js/type.js js/flight.js js/mark.js js/hunt-plan.js js/wall-grid.js js/glow.js)
+keep=(css fonts avatars icons marquee credits profile/case-gold.webp profile/case-silver.webp profile/case-neutral.webp
+  profile/case-weathered.webp profile/case-distressed.webp grain.svg blank.svg
+  js/dom.js js/type.js js/flight.js js/mark.js js/hunt-plan.js js/wall-grid.js js/glow.js
+  js/panel.js js/cases.js js/ratings.js js/api.js)
 rm -rf static
 mkdir -p static
 git -C "$checkout" archive "$commit" "${keep[@]/#/$src/}" | tar -x --strip-components=4 -C static

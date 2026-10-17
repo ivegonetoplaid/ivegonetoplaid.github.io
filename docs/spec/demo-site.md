@@ -1,6 +1,6 @@
 ---
 purpose: The contract Matinee's demo site holds to — the deck and its gestures, the three slides and the About, the demo (the files borrowed from Matinee, the player and its canned replies, the frames, the conductor between two screens, the phone's full-screen demo), the canned-walk builder, what the site fetches, the tests and the gate — with a map of where each part lives.
-updated: 2026-10-08
+updated: 2026-10-17
 governs:
   - index.html
   - site/
@@ -27,7 +27,8 @@ working demo: Matinee's own page, answered from canned files instead of a
 server. The site is static files only. GitHub Pages serves it from the root of
 `https://ivegonetoplaid.github.io/`.
 
-This spec was written from the code on 2026-10-07. It has two halves. The
+This spec was written from the code on 2026-10-07 and brought to Matinee 0.3 on
+2026-10-17. It has two halves. The
 **contract** says what the site does and what it refuses. It is authoritative.
 The **map** says where each part lives. It is a pointer, never proof. When
 the spec and the code disagree, the one that moved last decides which is wrong
@@ -42,10 +43,10 @@ This spec borrows Matinee's words. A *door* is one mood the first question offer
 question is the *doors question*. A door is a *genre*, and the question that
 names the kind of film inside it (slashers, slapstick) asks its *subgenre*. Each
 door asks a *tree* of questions; the answers a viewer gives are their *path*,
-and asking them is a *walk*. The *wall* is the poster backdrop, and it shows
-the films still in play, the step's *pool*. A pick *reveals* one film. The
-*trail* is the desktop's row of ways back. *Quips* are Matinee's short spoken
-lines.
+and asking them is a *walk*. The *wall* is the poster backdrop. It stands for
+the films still in play, the step's *pool*, and the demo draws it from a
+*sheet*: one picture holding a sample of a genre's posters. A pick *reveals*
+one film. *Quips* are Matinee's short spoken lines.
 
 ---
 
@@ -254,9 +255,12 @@ stands.
 - `tools/copy_page.sh MATINEE_CHECKOUT [COMMIT]` copies, from one commit of a
   Matinee checkout (its `HEAD` when no commit is given), only what the site
   uses: the stylesheet (`css/`), `fonts/`, `avatars/`, `icons/`, `marquee/`,
-  `credits/`, `grain.svg`, `blank.svg`, and seven page modules the player draws
-  with (`dom.js`, `type.js`, `flight.js`, `mark.js`, `hunt-plan.js`,
-  `wall-grid.js`, `glow.js`). They go to `static/` and are never changed.
+  `credits/`, the five rating cases' pictures (`profile/case-*.webp`),
+  `grain.svg`, `blank.svg`, and eleven page modules the player draws with
+  (`dom.js`, `type.js`, `flight.js`, `mark.js`, `hunt-plan.js`, `wall-grid.js`,
+  `glow.js`, `panel.js`, `cases.js`, `ratings.js`, and `api.js`, which
+  `cases.js` imports and nothing calls). They go to `static/` and are never
+  changed.
 - The script records each copied file's SHA-256 checksum in `PAGE_FILES` and
   the full commit hash in `MATINEE_COMMIT`.
 - The site depends on the copy beyond the demo: its fonts, its marquee
@@ -276,37 +280,56 @@ fixed script read from the canned files (section 5.3).
   path. Documentaries asks nothing and goes straight to its reveal.
 - **The words.** Every line is Matinee's own: the genres' opening lines,
   questions, answers and replies as Matinee's walk gave them, typed by Matinee's
-  own typing routine. Reveal, "Not that one" and "Just pick one!" lines are
+  own typing routine. Reveal, "Show me another" and "Just pick one!" lines are
   drawn from Matinee's quips, from the genre's own set where it has one; the
   same place in the walk always draws the same line.
-- **The wall.** The posters of the films still in the running drift upward in
-  a grid laid out by Matinee's own grid rules. A new pool fades in over the
-  old. After the last answer the posters take the size they keep through a
-  pick, as Matinee's do.
+- **The wall.** Posters drift upward in a grid laid out by Matinee's own grid
+  rules, at the size the step's whole pool would give them. Each poster is a
+  slice of its sheet: the first screen's, or the genre's on every later
+  screen of that genre. The player fetches every sheet before the demo shows,
+  and shows the first screen once its sheet can be drawn, so no poster waits
+  for its picture. A new wall fades in over the old. After the last answer the
+  posters take the size they keep through a pick, as Matinee's do.
 - **The hunt, on rails.** After the reply has been read for 1 s, the wall eases
   to the next whole row and hops to the picked film with Matinee's hop easing
   and Matinee's table of hop lengths, times and pauses. The hops are drawn from
   a seed made from the pick's place in the walk, and every hop takes its
   table's time whatever the screen's size. Only how far the first hop must run
-  to leave the screen comes from the screen. A hunt the viewer leaves, by the
-  trail or the corner mark, stops where it stands, and the next screen's wall
-  only drifts.
+  to leave the screen comes from the screen. The picked film's own poster
+  stands in the cell the hunt lands on. A hunt the viewer leaves, by the corner
+  mark, stops where it stands, and the next screen's wall only drifts.
 - **The reveal.** The landed poster grows to 2.4 times its cell in its own
   colour's glow while the rest of the wall dims, and the reveal line types under
   the gold one. After a 0.5 s beat the film's details rise (on a desktop its
   backdrop, its title, year and the demo's own synopsis) and the poster moves to
-  its slot over 1.3 s. The poster in its slot glows in its own colour, on a
-  screen that joined late too. A phone shows no backdrop; after 2.2 s its reveal
-  scrolls to the film's details inside its own box.
-- **The actions.** "Not that one" draws the path's next film, without end.
-  "Just pick one!" deals from the genre's paths, or every path at the doors. The
-  desktop's trail and the phone's "Back" lead back to the subgenre question or
-  the doors; "Start over" and the corner mark lead to the doors.
+  its slot over 1.3 s. The film's rank line with its standing, and its tags,
+  stand under Matinee's line on a desktop and under the title on a phone. The
+  poster rests above a "More on TMDB ↗" strip and glows in its own colour, on a
+  screen that joined late too; a film the guest has rated rests in its rating's
+  case instead, with its title on the case's plate. A phone shows no backdrop;
+  after 2.2 s its reveal scrolls to the film's details inside its own box.
+- **The actions.** The pick's foot bar holds Matinee 0.3's actions: "‹ Back",
+  "Something wrong?" and "Rate it" at its left, "Show me another" and "Hide
+  film" at its centre; on a phone the bar stands under Matinee's words. "Show
+  me another" draws the path's next film, without end. "‹ Back" leads to the
+  subgenre question, or the doors. "Just pick one!" deals from the genre's
+  paths, or every path at the doors. A question screen's foot holds "Start
+  over"; it and the corner mark lead to the doors. There is no trail.
+- **Ratings.** "Rate it" opens Matinee's panel with the five answers, best
+  first. An answer closes the panel and the poster at rest moves into the
+  answer's case. Three films start rated: Monty Python and the Holy Grail
+  ("Loved it!"), Back to the Future ("Really liked it") and The Hangover ("It
+  was ok, I guess"). A rating lasts until the page is left or reloaded; nothing
+  is stored. Matinee keeps the panel open for a short review; the demo shows
+  none.
 - **Shown, doing nothing.** The guest's profile menu opens and closes, and its
   items (Change avatar, Switch profiles, Delete profile, About Matinee) only
-  close it. "More on TMDB ↗" stands among the actions and does nothing.
-  "Something wrong with this pick?" opens Matinee's note panel; its
-  Save does nothing.
+  close it. The poster's "More on TMDB ↗" strip does nothing. "Something
+  wrong?" opens Matinee's note form in the pick's panel; its Save does nothing.
+  "Hide film" opens the panel with "3 months", "6 months", "1 year" and "For
+  good", and each only closes it. A panel opens and closes on every screen at
+  once, as Matinee's does: by its action, its ×, Escape, or a press outside
+  it.
 - **No credit line.** The demo shows no TMDB credit line; the site's About
   carries TMDB's notice and logo (section 4).
 - **One press wins.** A press that changes the screen locks every button on it
@@ -338,22 +361,26 @@ The builder (section 6) records the canned files from Matinee's own server code.
   that explains an asterisk goes with the starred answer when that answer is
   left out. An answer whose
   films the library lacks is absent, as Matinee leaves it out.
-- Every wall's films are the films Matinee's server named for that step, less
-  any film without a real poster, in film-id order.
-- The first screen's wall is every film behind the five doors' first
-  questions.
+- Each step's wall names its sheet, the films on the sheet in the sheet's
+  order, and how many films the step's pool holds: the films Matinee's server
+  named for that step, less any film without a real poster. The site carries
+  no pool itself.
+- There are six sheets: the first screen's, sampled from every film behind the
+  five doors' first questions, and one for each genre, sampled from the films
+  behind its door. Each holds up to 100 films, drawn the same at every build.
 - Each path reveals exactly three films. No film is revealed by two paths.
-- Each pick holds its film alone: its id, title and year as Matinee's film
-  card names them, and the demo's own synopsis from `tools/synopses.json`,
+- Each pick holds its film alone: its id, title and year, its rank line and
+  standing among its door's films, and its tags, as Matinee's film card gives
+  them, and the demo's own synopsis from `tools/synopses.json`,
   written for the demo and never copied from TMDB, whose terms forbid keeping
   its data longer than six months.
 - The canned set holds only what the player reads. The site carries no film
   cards, and no reply the demo never makes.
-- The player asks the site for every poster at `/img/poster/<id>/<size>` and
-  every backdrop at `/img/backdrop/<id>/l`.
-- The pictures are WebP files with no extension. Each poster exists in the four
-  sizes Matinee's page asks for (`xs`, `s`, `m`, `l`). Each revealed film's
-  backdrop exists in `l`. No picture is kept for a film no screen shows.
+- The player asks the site for each sheet at `/img/wall/<name>`, each revealed
+  film's poster at `/img/poster/<id>/l` and its backdrop at
+  `/img/backdrop/<id>/l`.
+- The pictures are WebP files with no extension. No picture is kept that no
+  screen shows.
 
 ### 5.4 The frames
 
@@ -430,13 +457,13 @@ A missing or empty setting stops the builder with a message.
 
 - **Matinee's own server.** The builder copies the film table into a scratch
   folder. It then runs Matinee's app inside the builder's own process, against
-  that copy and the shipped labels. The film table's record of the library takes the media
+  that copy, the shipped labels and Matinee's shipped tags. The film table's record of the library takes the media
   server's place. It answers no synopsis, and no media server is contacted. The scratch
   folder is removed afterwards.
 - **What it records.** The boot replies; a Guest profile (avatar "popcorn"),
   created and opened; the first screen; every answer path behind the five
-  doors; and one pick reply as a template. Every request asks for "only what we
-  can watch right now".
+  doors; and each revealed film's card, ranked among its door's films. Every
+  request asks for "only what we can watch right now".
 - **The film folders.** Each film's poster is the `folder.jpg` in its folder,
   and its backdrop is the `backdrop.jpg`. The builder reads each picture's size
   without decoding it.
@@ -493,19 +520,19 @@ written. It refuses, and writes nothing, when:
 A build cut short at any step leaves the last good set standing.
 
 1. **Pictures first, which only add.** Each picture is converted to WebP at
-   quality 72 with its metadata stripped: posters at 100, 160, 320 and 640 px
-   wide (Matinee's own sizes), and backdrops at 1600 px. Posters are made for
-   every film a wall shows, and backdrops for revealed films only. Each size is
-   written under a working name and renamed into place once whole. A size newer
-   than its source is kept. `img/.made-with.json` records the widths and the
-   quality, and a change to either remakes every picture. One conversion may
-   take at most 120 s.
+   quality 72 with its metadata stripped. A revealed film's poster is made 640
+   px wide and its backdrop 1600 px; a size newer than its source is kept, and
+   `img/.made-with.json` records the widths and the quality, a change to any of
+   which remakes every picture. Each sheet is made afresh: its films' posters
+   cut to 160 × 240 px in a scratch folder, then laid 20 across. Each picture
+   is written under a working name and renamed into place once whole. One
+   conversion may take at most 120 s.
 2. **The canned files swap in whole.** The new set is written beside the old,
    and the two swap by rename. A swap cut short between its renames is put back
    at the start of the next run.
 3. **The film list is replaced by rename.**
-4. **Old pictures go last.** Only then are the pictures of films no longer shown
-   removed.
+4. **Old pictures go last.** Only then are the pictures of films no longer
+   revealed, and any sheet no longer named, removed.
 
 ## 7. What the site fetches
 
@@ -574,15 +601,16 @@ being true.
   that half is skipped.
 - **The canned files** (`tests/canned.test.mjs`): five doors open in order with
   no source question. Every answer leads to a canned step. Each path reveals
-  three films, none twice, each with its backdrop and a synopsis. Each revealed
-  film stands at the end of its own path. Every film a screen shows has its
-  poster at every size, and no picture is kept for a film no screen shows. No
+  three films, none twice, each with its backdrop and a synopsis. Every wall's
+  sheet exists, and every revealed film has its poster; no picture is kept that
+  no screen shows. That a revealed film stands at the end of its own path is
+  the builder's refusal (section 6.5), since the site carries no pool. No
   canned file holds an item id, a `{tmdb-` marker, a path under `/home/` or
   `/mnt/`, the placeholder address, any web address, or a private field by
   name.
 - **The walk** (`tests/demo-walk.test.mjs`): on a desktop and on a phone, the
   player alone walks one path to its reveal, round its three films in the
-  canned order and back to the first, then "Start over". On the desktop every
+  canned order and back to the first, then the corner mark to the doors. On the desktop every
   door's first screen is opened once and must not scroll inside itself. Every
   path runs the same player code, and the canned files test checks each path's
   data without a browser. The walk
@@ -591,21 +619,24 @@ being true.
   screen that scrolls inside itself. The corner mark inside
   the demo starts over in place at `/demo/`. The demo fetches every canned file
   the site carries, and no other. A canned file refused leaves both drawn
-  screens showing and saying the demo did not load. A hunt left by the trail
-  stops: over the next 2 s the doors wall moves no further sideways and no more
-  than 25 px down.
+  screens showing and saying the demo did not load. A hunt left by the corner
+  mark stops: over the next 2 s the doors wall moves no further sideways and no
+  more than 25 px down.
 - **The frames** (`tests/frames.test.mjs`): both screens open on the doors
   question, greeting the guest, and every item of the profile menu only closes
   it. Each frame stays at `/demo/`. A window that widens past a phone's width gets its monitor's demo
   once.
 - **The conductor** (`tests/conductor.test.mjs`): a walk on the monitor moves
-  the drawn phone to the reveal, through "Not that one" and back to the start. A
-  walk on the drawn phone moves the monitor, and the phone's Back and the
-  desktop's trail move both. "Just pick one!" mid-walk and the phone's Back on a
-  pick move both. The profile menu opens and closes on both by Escape and a
-  press beside it, and its items move neither screen. "More on TMDB ↗" opens no
-  page and moves nothing. A note's panel opens on both, and its Save moves
-  nothing. A screen reloaded mid-walk rejoins where the
+  the drawn phone to the reveal, through "Show me another" and back to the
+  start. On the way, a film rated before the demo rests in its case on both;
+  "Rate it" opened on the phone and answered on the monitor closes on both and
+  dresses the poster in the answer's case on both; and a "Hide film" length
+  closes the panel on both and moves neither screen. A walk on the drawn phone
+  moves the monitor, and either screen's "‹ Back" moves both. "Just pick one!"
+  mid-walk and the phone's "‹ Back" on a pick move both. The profile menu opens
+  and closes on both by Escape and a press beside it, and its items move
+  neither screen. The poster's "More on TMDB ↗" opens no page and moves
+  nothing. A note's panel opens on both, and its Save moves nothing. A screen reloaded mid-walk rejoins where the
   other stands. At full motion both screens reach every reveal within 100 ms of
   each other, on the same film. A wheel over a frame moves the deck; a flick that scrolls a
   phone's reveal, even to its end, leaves the deck where it is.
@@ -634,10 +665,11 @@ their routes, as specified in Matinee's spec; a pick is the site's own.
 
 ```text
 canned/boot.json             { "quips": <Matinee's /api/quips reply>, "open": <its profile open reply> }
-canned/first.json            Matinee's /api/first reply
-canned/walk/<tree>.json      { "<answers key>": <Matinee's /api/walk reply>, … }
+canned/first.json            Matinee's /api/first reply, its "pool" replaced by "wall": <wall>
+canned/walk/<tree>.json      { "<answers key>": <Matinee's /api/walk reply, its "pool" replaced by "wall": <wall>>, … }
 canned/picks.json            { "<tree>/<path>": [ <pick>, <pick>, <pick> ], … }
-<pick>                       { "film": { "tmdb": …, "title": …, "year": …, "synopsis": … } }
+<wall>                       { "sheet": "/img/wall/<name>", "films": [<tmdb id>, …], "count": <films in the pool>, "cols": 20, "w": 160, "h": 240 }
+<pick>                       { "film": { "tmdb": …, "title": …, "year": …, "rank": …, "standing": …, "tags": [ … ], "synopsis": … } }
 ```
 
 (`tools/build_demo.py::canned_files`, `tools/build_demo.py::record`)
@@ -648,18 +680,24 @@ canned/picks.json            { "<tree>/<path>": [ <pick>, <pick>, <pick> ], … 
   (`tools/build_demo.py::key`)
 - `<path>` is the door's subgenre answer as `question:option`, or `_` for a door
   that asks nothing. (`tools/build_demo.py::paths`)
+- `films` lists the sheet's films in the order its posters stand, `cols` to a
+  row, each `w` × `h` px; `count` sizes the posters, as Matinee's grid sizes
+  them for a pool that large. (`tools/build_demo.py::Sheet`)
+- `rank` and `standing` are null for a film Matinee does not rank; `tags` may
+  be empty.
 - `first.json` always carries `"source": null`. No canned file holds a web
   address.
 
 ### 9.2 The pictures
 
 ```text
-img/poster/<tmdb id>/xs | s | m | l     WebP, 100 / 160 / 320 / 640 px wide, no extension
-img/backdrop/<tmdb id>/l                WebP, 1600 px wide, no extension
-img/.made-with.json                     {"quality": 72, "poster": {"xs": 100, "s": 160, "m": 320, "l": 640}, "backdrop": {"l": 1600}}
+img/wall/<name>             WebP sheet, 20 posters of 160 × 240 px to a row; <name> is first, comedy, horror, scifi, kids or nonfiction
+img/poster/<tmdb id>/l      WebP, 640 px wide, revealed films only, no extension
+img/backdrop/<tmdb id>/l    WebP, 1600 px wide, revealed films only, no extension
+img/.made-with.json         {"quality": 72, "poster": {"l": 640}, "backdrop": {"l": 1600}, "sheet": 160}
 ```
 
-(`tools/build_demo.py::pictures`, `tools/build_demo.py::convert`)
+(`tools/build_demo.py::pictures`, `tools/build_demo.py::convert`, `tools/build_demo.py::sheet`)
 
 ### 9.3 `tools/demo-films.json`
 
@@ -674,7 +712,7 @@ img/.made-with.json                     {"quality": 72, "poster": {"xs": 100, "s
 ```
 
 `exclude` lists TMDB ids the site must never show. `reveal` maps each path to
-its three TMDB ids, in film-id order, which is the order "Not that one" deals
+its three TMDB ids, in film-id order, which is the order "Show me another" deals
 them. The builder writes `exclude` sorted and `reveal` for every path.
 (`tools/build_demo.py::main`, `tools/build_demo.py::choose_all`)
 
@@ -705,7 +743,7 @@ that commit has it, two spaces, and its path in the site.
 
 # Known limits
 
-As the code stood on 2026-10-08.
+As the code stood on 2026-10-17.
 
 1. **Safari is measured through WebKit, not on a device.** The suite runs in
    Chromium and the held-deck test in Firefox. WebKit runs of the walk and the
@@ -728,12 +766,19 @@ As the code stood on 2026-10-08.
    and the canned-file test still run everywhere.
 6. **"Roll again" is checked in the site's own words only**: `index.html` and
    `README.md`. The canned replies carry Matinee's own text.
-7. **The demo keeps nothing.** The profile menu's items and a note's Save do
-   nothing. A screen reloaded on its own rejoins the others; a whole page
-   reloaded starts at the doors.
-8. **The wall is a representation.** A new pool fades in over the old where
-   Matinee's posters slide to their new places, and the hunt's first hop runs
-   at its table's time where Matinee would slow a long hop down.
+7. **The demo keeps nothing.** The profile menu's items, a note's Save and the
+   hide lengths do nothing. A rating lasts only while the page stays open. A
+   screen reloaded on its own rejoins the others, though a rating made before
+   the last "Start over" is not replayed to it; a whole page reloaded starts at
+   the doors with only the three starting ratings.
+8. **The wall is a representation.** A wall shows a sample of its genre's
+   films, not the step's own pool, at the size the pool would give, so a
+   poster may show twice on a screen, far apart. A new wall fades in over the
+   old where Matinee's posters slide to their new places, and the hunt's first
+   hop runs at its table's time where Matinee would slow a long hop down.
+10. **The sheets are fetched on arrival.** All six, about 3.6 MB together,
+    load while the first slide shows, so a visitor who never opens the demo
+    fetches them too.
 9. **Two live frames on a modest laptop are unmeasured.** No test measures how
    smoothly the monitor and the phone run together on slow hardware.
 
@@ -771,18 +816,22 @@ was verified against the source on 2026-10-07. Search by the symbol.
 
 | Handle | What it guarantees |
 |---|---|
-| `tools/copy_page.sh` | Copies the stylesheet, assets and seven page modules from one Matinee commit, records `PAGE_FILES`, and writes `MATINEE_COMMIT` |
+| `tools/copy_page.sh` | Copies the stylesheet, assets, the cases' pictures and eleven page modules from one Matinee commit, records `PAGE_FILES`, and writes `MATINEE_COMMIT` |
 | `demo/index.html` | The demo's page: Matinee's stylesheet, the wall and stage it dresses, and the player |
 | `site/demo.js::mountDemo` | A frame of `/demo/` at a screen's size, scaled to its glass |
-| `site/player.js::load` / `canned` | Reads the boot replies, the first screen, the picks and every walk from `/canned/` |
+| `site/player.js::load` / `canned` | Reads the boot replies, the first screen, the picks and every walk from `/canned/`, then fetches every sheet and waits for the first |
 | `site/player.js::press` / `run` / `lockStage` | A press locks the screen and goes to the conductor (or plays at once alone); `run` plays each step, `still` for a late joiner |
 | `site/player.js::say` / `quip` | Matinee's typing; a quip from the genre's set or universal, the same for the same place in the walk |
 | `site/player.js::doors` / `openDoor` / `ask` | The doors question with the guest's greeting; a genre's opening line and subgenre question |
-| `site/player.js::pick` / `nextState` / `goldLine` / `paths` | A pick: the gold line, 1 s read, the hunt, the reveal line, the beat, the rest; "Not that one" draws the next film |
-| `site/player.js::rest` / `settle` / `choices` | The resting page in Matinee's markup with the demo's synopsis; the poster carried to its slot; the actions |
-| `site/player.js::nameTag` / `showMenu` / `noteLink` / `showNote` | The profile menu and note panel, shown and doing nothing |
-| `site/player.js::trail` / `wayBack` / `back` | The desktop's trail, the phone's way back, and where Back leads |
-| `site/player-wall.js::DemoWall.show` / `draw` | The wall laid out by Matinee's grid rules, at resting size after the last answer; a new pool fades in |
+| `site/player.js::pick` / `nextState` / `goldLine` / `paths` | A pick: the gold line, 1 s read, the hunt, the reveal line, the beat, the rest; "Show me another" draws the next film |
+| `site/player.js::pickFrame` / `rest` / `facts` / `pickBar` | Matinee 0.3's pick: the line, the rank line and tags, the details, the foot bar's actions, and the pick's panel |
+| `site/player.js::settle` / `dress` / `landed` | The poster carried to its link, bare or in its rating's case |
+| `site/player.js::showPanel` / `ratePanel` / `hidePanel` / `notePanel` | The pick's panels, opened and closed on every screen; Rate it's answers, Hide film's lengths and the note form |
+| `site/player.js::RATED` / `ratings` / `rate` | The three starting ratings; a rating kept in the page, which closes the panel and dresses the poster |
+| `site/player.js::nameTag` / `showMenu` | The profile menu, shown and doing nothing |
+| `site/player.js::wayBack` / `back` | A question screen's "Start over", and where "‹ Back" leads |
+| `site/player-wall.js::fetchSheets` | Fetches every sheet at once; resolves when the first can be drawn |
+| `site/player-wall.js::DemoWall.show` / `draw` / `place` | The wall laid out by Matinee's grid rules for the pool's size, each cell a slice of the sheet, the landed cell the picked film's poster; a new wall fades in |
 | `site/player-wall.js::huntPlan` / `DemoWall.hunt` | Hops, times and pauses from a seed and Matinee's hop table; the screen gives only the first hop's reach |
 | `site/player-wall.js::DemoWall.grow` / `glowAt` / `endPick` | The landed poster grows 2.4 times in its glow while the wall dims; a pick's end restores the wall |
 | `site/player-wall.js::sequence` / `seedOf` | Numbers and seeds the same in every screen |
@@ -804,12 +853,13 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tools/build_demo.py::Revealable.allows` | Real poster, backdrop, year 1960 or later, and labelled behind the door (Documentaries by Matinee's rule) |
 | `tools/build_demo.py::choose_all` / `choose` | Keeps listed films that still qualify, reserves them first, fills the rest with each era's most-voted film, then the most-voted, keeps each path's three in film-id order, with no film in two paths |
 | `tools/build_demo.py::check_reveal` | Refuses a path without three films, a film off its path, or a film in two paths |
-| `tools/build_demo.py::card` | A revealed film's id, title and year, from Matinee's film card |
-| `tools/build_demo.py::canned_files` | The canned files in memory: walls of real-poster films in film-id order, the first wall as every door's films, `source` null |
+| `tools/build_demo.py::card` | A revealed film's id, title, year, rank line, standing and tags, from Matinee's film card ranked among its door's films |
+| `tools/build_demo.py::Sheet` / `sheets_of` | The first screen's sheet and each genre's: up to 100 real-poster films, a seeded sample; a screen's wall as a sheet and its pool's size |
+| `tools/build_demo.py::canned_files` | The canned files in memory: each screen's wall in place of its pool, `source` null |
 | `tools/build_demo.py::PRIVATE_FIELDS` / `private_fields` / `leaks` | Refuses a private field by name, a setting's value, a folder marker or an item id before anything is written |
-| `tools/build_demo.py::pictures` / `convert` | WebP at Matinee's widths, quality 72, metadata stripped; written under a working name and renamed whole; remade when the widths or quality change |
+| `tools/build_demo.py::pictures` / `convert` / `cut_poster` / `sheet` | Revealed films' posters and backdrops, and every sheet, as WebP at quality 72, metadata stripped; written under a working name and renamed whole |
 | `tools/build_demo.py::write_canned` | Swaps the canned set in whole; restores an interrupted swap |
-| `tools/build_demo.py::prune` | Removes the pictures of films no longer shown, last |
+| `tools/build_demo.py::prune` | Removes the pictures of films no longer revealed, last; `main` removes sheets no longer named |
 | `tools/build_demo.py::main` | The order: pictures, canned files, film list by rename, prune |
 | `tools/demo-films.json` | Three films per path and the films the site never shows |
 
@@ -825,10 +875,10 @@ was verified against the source on 2026-10-07. Search by the symbol.
 | `tests/deck.test.mjs` | The deck's gestures, judged by where the slides stand |
 | `tests/site.test.mjs` | Fit at eleven sizes, no other origin, the links, the About, no "roll again", the marquee and only the first slide before the deck's script |
 | `tests/page-copy.test.mjs` | The borrowed files against `PAGE_FILES`, and against the commit where a checkout is at hand |
-| `tests/canned.test.mjs` | The canned files' completeness, path membership, pictures and privacy |
+| `tests/canned.test.mjs` | The canned files' completeness, sheets and pictures, and privacy |
 | `tests/demo-walk.test.mjs` | One path walked to a pick and round its films on a desktop and a phone; each door's first screen on the desktop; the canned set fetched whole; a failed load; a hunt left behind |
 | `tests/frames.test.mjs` | Both screens open on the doors; the profile menu's items do nothing; the late monitor |
-| `tests/conductor.test.mjs` | Both screens play every press together, reveal within 100 ms of each other, rejoin after a reload, and pass the wheel |
+| `tests/conductor.test.mjs` | Both screens play every press together, rating and panels included, reveal within 100 ms of each other, rejoin after a reload, and pass the wheel |
 | `tests/deck-held.test.mjs` | A walk to a pick inside a frame leaves the deck where it stands, in Firefox |
 | `tests/phone-demo.test.mjs` | The phone's full-screen demo, its chip and Back |
 | `.nojekyll` | Pages serves the files as they stand |

@@ -1,6 +1,7 @@
 // One script on two screens: a press on either screen plays on both at once, through the walk to a reveal,
-// "Not that one" and "Start over", by the desktop's trail and the phone's "Back" too, and both show the same
-// films. The profile menu opens and closes on both and its items do nothing; "More on TMDB" and a note's Save do nothing. A
+// "Show me another" and "Start over", by "‹ Back" too, and both show the same films. The profile menu opens and
+// closes on both and its items do nothing; the poster's "More on TMDB" and a note's Save do nothing. A rating made on
+// one screen dresses the poster in its case on both, and a film rated before the demo opened rests in its case. A
 // screen reloaded mid-walk rejoins where the other stands. A wheel turned over a screen moves the deck, unless it
 // scrolls something inside the screen.
 import assert from "node:assert/strict";
@@ -75,35 +76,58 @@ async function same(desk, phone, expect = () => true) {
 
 const named = (frame, say) => frame.getByRole("button", { name: new RegExp(`^${say.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i") });
 
-test("a walk made on the desktop moves the phone, to the pick, round its films and back to the start", { timeout: 300000 }, async () => {
+// The case the resting poster stands in on a screen: "gold", "silver" and so on, or null for a bare poster.
+const caseOf = (f) => f.evaluate(() => document.querySelector(".poster-link.landed .case")?.className.match(/case-(\w+)/)?.[1] ?? null);
+const panelShows = (f) => f.evaluate(() => Boolean(document.querySelector(".pick-panel")));
+
+async function bothShow(desk, phone, read, want) {
+  const until = Date.now() + STEP_MS;
+  while (Date.now() < until && (await Promise.all([read(desk), read(phone)])).some((v) => v !== want)) await new Promise((r) => setTimeout(r, 200));
+  assert.deepEqual(await Promise.all([read(desk), read(phone)]), [want, want]);
+}
+
+test("a walk made on the desktop moves the phone, to the pick, round its films and back to the start, rating and hiding on the way", { timeout: 300000 }, async () => {
   const { context, trouble, desk, phone } = await open();
   await named(desk, "Comedy").click();
   let now = await same(desk, phone, (s) => s.answers.length > 0 && /foolishness/i.test(s.line));
   await named(desk, now.answers[1]).click();
-  now = await same(desk, phone, (s) => s.film !== null);
+  now = await same(desk, phone, (s) => s.film?.startsWith("Back to the Future"));
+  await bothShow(desk, phone, caseOf, "silver"); // rated before the demo opened
   const seen = [now.film];
   for (let i = 0; i < 2; i++) {
-    await desk.getByRole("button", { name: "Not that one" }).click();
+    await desk.getByRole("button", { name: "Show me another" }).click();
     now = await same(desk, phone, (s) => s.film !== null && !seen.includes(s.film));
     seen.push(now.film);
+    if (i > 0) continue;
+    await bothShow(desk, phone, caseOf, null);
+    await phone.getByRole("button", { name: "Rate it" }).click();
+    await bothShow(desk, phone, panelShows, true);
+    await desk.getByRole("button", { name: "Loved it!" }).click();
+    await bothShow(desk, phone, caseOf, "gold");
+    await bothShow(desk, phone, panelShows, false);
+    await desk.getByRole("button", { name: "Hide film" }).click();
+    await bothShow(desk, phone, panelShows, true);
+    await desk.getByRole("button", { name: "1 year" }).click();
+    await bothShow(desk, phone, panelShows, false);
+    assert.equal((await screenOf(phone)).film, now.film, "a hide length took the screen nowhere");
   }
-  await desk.getByRole("button", { name: "Start over" }).first().click();
+  await desk.locator(".wordmark").click();
   await same(desk, phone, (s) => s.answers.includes("Comedy"));
   assert.deepEqual(trouble, []);
   await context.close();
 });
 
-test("a walk made on the phone moves the desktop, and the phone's Back and the desktop's trail move both", { timeout: 300000 }, async () => {
+test("a walk made on the phone moves the desktop, and either screen's ‹ Back moves both", { timeout: 300000 }, async () => {
   const { context, trouble, desk, phone } = await open();
   await named(phone, "Horror").click();
   const asked = await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.answers.length > 2);
   await named(phone, asked.answers[0]).click();
   await same(desk, phone, (s) => s.film !== null);
-  await phone.locator("button.back").click();
+  await phone.getByRole("button", { name: "‹ Back" }).click();
   await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.film === null);
   await named(phone, asked.answers[1]).click();
   const first = await same(desk, phone, (s) => s.film !== null);
-  await desk.locator(".trail button.crumb").last().click();
+  await desk.getByRole("button", { name: "‹ Back" }).click();
   await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.film === null);
   await named(desk, asked.answers[2]).click();
   await same(desk, phone, (s) => s.film !== null && s.film !== first.film);
@@ -123,13 +147,13 @@ test("a wheel turned over a frame moves the deck", async () => {
 
 const menuOpen = (frame) => frame.evaluate(() => Boolean(document.querySelector(".viewer-menu:not([hidden])")));
 
-test("Just pick one! mid-walk and the phone's Back on a pick move both screens", { timeout: 300000 }, async () => {
+test("Just pick one! mid-walk and the phone's ‹ Back on a pick move both screens", { timeout: 300000 }, async () => {
   const { context, trouble, desk, phone } = await open();
   await named(phone, "Sci-fi").click();
   await same(desk, phone, (s) => s.answers.length > 0 && !s.answers.includes("Comedy"));
   await phone.getByRole("button", { name: "Just pick one!" }).click();
   await same(desk, phone, (s) => s.film !== null);
-  await phone.locator("button.back").click();
+  await phone.getByRole("button", { name: "‹ Back" }).click();
   await same(desk, phone, (s) => s.answers.length > 0 && s.film === null);
   assert.deepEqual(trouble, []);
   await context.close();
@@ -166,12 +190,12 @@ test("More on TMDB opens nothing, and a note's panel opens on both screens while
   await named(desk, "Documentaries").click();
   const now = await same(desk, phone, (s) => s.film !== null);
   const pages = context.pages().length;
-  await desk.getByRole("button", { name: "More on TMDB ↗" }).click();
+  await desk.locator(".poster-link").click();
   await new Promise((r) => setTimeout(r, 500));
   assert.equal(context.pages().length, pages, "More on TMDB opened no page");
   assert.equal((await screenOf(desk)).film, now.film, "More on TMDB took the screen nowhere");
-  await desk.getByRole("button", { name: "Something wrong with this pick?" }).click();
-  const panelOpen = (f) => f.evaluate(() => !document.querySelector(".correct-panel").hidden);
+  await desk.getByRole("button", { name: "Something wrong?" }).click();
+  const panelOpen = (f) => f.evaluate(() => Boolean(document.querySelector(".pick-panel")));
   await same(desk, phone, () => true);
   for (let i = 0; i < 20 && !((await panelOpen(desk)) && (await panelOpen(phone))); i++) await new Promise((r) => setTimeout(r, 200));
   assert.deepEqual([await panelOpen(desk), await panelOpen(phone)], [true, true]);
@@ -215,9 +239,9 @@ test("at full motion both screens reach every reveal within 100 ms of each other
   const asked = await same(desk, phone, (s) => /nightmare/i.test(s.line) && s.answers.length > 0);
   await named(phone, asked.answers[1]).click();
   for (let i = 0; i < 2; i++) {
-    await phone.getByRole("button", { name: "Not that one" }).waitFor({ timeout: 30000 });
+    await phone.getByRole("button", { name: "Show me another" }).waitFor({ timeout: 30000 });
     await new Promise((r) => setTimeout(r, 1500));
-    await desk.getByRole("button", { name: "Not that one" }).click();
+    await desk.getByRole("button", { name: "Show me another" }).click();
   }
   await phone.waitForFunction(() => window.__reveals.length >= 3, null, { timeout: 30000 });
   await desk.waitForFunction(() => window.__reveals.length >= 3, null, { timeout: 30000 });

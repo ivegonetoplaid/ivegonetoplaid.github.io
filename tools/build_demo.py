@@ -4,7 +4,8 @@ Run it with the Python of a Matinee checkout, so it can import Matinee (`<matine
 tools/build_demo.py`). It runs Matinee's own server code in this process against a copy of the film table, with
 the library the table was built from standing in as the media server, and records every reply the demo's page
 asks for. The pictures are made from each film's own folder: `folder.jpg` for its poster and `backdrop.jpg` for
-its backdrop, as WebP at each size Matinee's page asks for.
+its backdrop, as WebP: a revealed film's poster and backdrop at the one size the demo shows them, and a sheet for
+the first screen and for each genre, a grid of a sample of its films that the player's wall shows slices of.
 
 Settings, read from the environment and never written out:
   FILM_TABLE   a films.sqlite that Matinee's nightly rebuild wrote with a library
@@ -22,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -40,6 +42,7 @@ from matinee.labels import load_labels
 from matinee.library.choice import MediaServer
 from matinee.store import Store
 from matinee.table import load_table, library_films
+from matinee.tags import load_tags
 from matinee.web.app import IMAGE_WIDTHS, create_app
 from matinee.web.config import Config
 from matinee.web.theatre import Theatre
@@ -62,8 +65,13 @@ SHOWN = {
     ("kids", "kind"): (0, 1, 2, 3),  # silly, a big adventure, magic, talking animals
 }
 GUEST = {"name": "Guest", "avatar": "popcorn"}
-POSTER_WIDTHS = IMAGE_WIDTHS["poster"]
+POSTER_WIDTHS = {"l": IMAGE_WIDTHS["poster"]["l"]}  # a revealed film's poster, grown over the wall and at rest
 BACKDROP_WIDTHS = {"l": IMAGE_WIDTHS["backdrop"]["l"]}  # the only backdrop size the page asks for
+# A sheet: one for the first screen and one for each genre, every wall of the genre drawing on it. The wall spaces
+# a film's repeats far apart and stands dimmed behind the words, so a sample of its films is enough.
+SHEET_FILMS = 100
+SHEET_WIDTH = 160  # a poster's width on the sheet: as a normal screen fetched the walls' posters one at a time
+SHEET_COLS = 20  # posters across a sheet
 MAGICK_S = 120  # the most one picture command may take
 STAMP = IMG / ".made-with.json"  # the widths and quality the pictures were made with
 POSTER_RATIO = (0.6, 0.75)  # width over height of a real poster; a video frame is wide
@@ -156,7 +164,8 @@ def client(table: Path, work: Path) -> TestClient:
         listed=labels.films(),
     )
     config = Config(MediaServer("jellyfin", "http://library.invalid", "unused"), work, None, None)
-    return TestClient(create_app(config, theatre, Store(work / "store.sqlite"), None), base_url="https://demo.invalid")
+    app = create_app(config, theatre, Store(work / "store.sqlite"), None, tags=load_tags())  # Matinee's own tags, as its server reads them
+    return TestClient(app, base_url="https://demo.invalid")
 
 
 def ok(reply: Any) -> Any:
@@ -276,10 +285,11 @@ def choose(tree: str, pool: list[int], need: int, taken: set[int], can: Revealab
     return chosen
 
 
-def card(c: TestClient, tmdb: int) -> dict[str, Any]:
-    """A film's id, title and year, as Matinee's film card names them."""
-    got = ok(c.get(f"/api/film/{tmdb}"))
-    return {"tmdb": got["tmdb"], "title": got["title"], "year": got["year"]}
+def card(c: TestClient, tmdb: int, tree: str) -> dict[str, Any]:
+    """A film's id, title and year, its rank among `tree`'s films with its standing, and its tags, as Matinee's film
+    card gives them."""
+    got = ok(c.get(f"/api/film/{tmdb}", params={"door": tree}))
+    return {k: got[k] for k in ("tmdb", "title", "year", "rank", "standing", "tags")}
 
 
 def pick(film: dict[str, Any], synopsis: str) -> dict[str, Any]:
@@ -425,22 +435,45 @@ def check_reveal(reveal: dict[str, list[int]], pools: dict[str, tuple[str, list[
             seen[t] = name
 
 
-def canned_files(rec: Recorded, fit: set[int], reveal: dict[str, list[int]], cards: dict[int, dict[str, Any]]) -> dict[str, str]:
-    """The canned replies, by file name. Every pool holds only films with a real poster, in film-id order."""
+@dataclass(frozen=True)
+class Sheet:
+    """A sheet as the player draws it: its name and the films on it, in the sheet's order."""
 
-    def clean(pool: list[int]) -> list[int]:
-        return sorted(t for t in pool if t in fit)
+    name: str
+    films: list[int]
 
+    def wall(self, count: int) -> dict[str, Any]:
+        """A screen's wall: this sheet, standing for a pool of `count` films, which sizes its posters."""
+        cols = min(SHEET_COLS, len(self.films))
+        return {"sheet": f"/img/wall/{self.name}", "films": self.films, "count": count, "cols": cols, "w": SHEET_WIDTH, "h": round(SHEET_WIDTH * 1.5)}
+
+
+def sheets_of(rec: Recorded, fit: set[int]) -> dict[str, Sheet]:
+    """The first screen's sheet, from every genre's films, and each genre's, from the films behind its door: a sample
+    of each, the same at every build."""
+
+    def sheet(name: str, pool: set[int]) -> Sheet:
+        films = sorted(pool & fit)
+        return Sheet(name, random.Random(name).sample(films, min(SHEET_FILMS, len(films))))
+
+    doors = {tree: sheet(tree, set(w.steps[""]["pool"])) for tree, w in rec.walks.items()}
+    return {"first": sheet("first", {t for w in rec.walks.values() for t in w.steps[""]["pool"]}), **doors}
+
+
+def canned_files(rec: Recorded, sheets: dict[str, Sheet], fit: set[int], reveal: dict[str, list[int]], cards: dict[int, dict[str, Any]]) -> dict[str, str]:
+    """The canned replies, by file name. Each screen carries its wall, never its whole pool."""
     written = synopses({t for films in reveal.values() for t in films})
     doors = [o for o in rec.first["options"] if o["tree"] in DOORS]
+    first = {k: v for k, v in rec.first.items() if k != "pool"}
     reachable = {t for w in rec.walks.values() for t in w.steps[""]["pool"]}
     files = {
         "boot.json": as_text(rec.boot),
-        "first.json": as_text({**rec.first, "options": doors, "pool": clean(list(reachable)), "source": None}),
+        "first.json": as_text({**first, "options": doors, "wall": sheets["first"].wall(len(reachable & fit)), "source": None}),
         "picks.json": as_text({name: [pick(cards[t], written[t]) for t in films] for name, films in reveal.items()}),
     }
     for tree, w in rec.walks.items():
-        files[f"walk/{tree}.json"] = as_text({k: {**s, "pool": clean(s["pool"])} for k, s in w.steps.items()})
+        steps = {k: {**{f: v for f, v in s.items() if f != "pool"}, "wall": sheets[tree].wall(len(set(s["pool"]) & fit))} for k, s in w.steps.items()}
+        files[f"walk/{tree}.json"] = as_text(steps)
     return files
 
 
@@ -463,16 +496,43 @@ def write_canned(files: dict[str, str]) -> None:
     shutil.rmtree(old, ignore_errors=True)
 
 
-def pictures(on_disk: dict[int, Folder], posters: set[int], backdrops: set[int]) -> int:
-    """Every picture the demo shows, made afresh where the widths or the quality have changed since the last build."""
-    made_with = {"quality": QUALITY, "poster": POSTER_WIDTHS, "backdrop": BACKDROP_WIDTHS}
+def cut_poster(job: tuple[Path, Path]) -> None:
+    """Writes `source` cut to a 2:3 poster SHEET_WIDTH wide at `out`."""
+    source, out = job
+    size = f"{SHEET_WIDTH}x{round(SHEET_WIDTH * 1.5)}"
+    args = ["magick", f"{source}[0]", "-strip", "-colorspace", "sRGB", "-resize", f"{size}^", "-gravity", "center", "-extent", size]
+    done = subprocess.run([*args, f"png:{out}"], capture_output=True, text=True, timeout=MAGICK_S)
+    if done.returncode != 0:
+        raise SystemExit(f"a poster could not be cut for a sheet: {done.stderr.strip()[:200]}")
+
+
+def sheet(job: tuple[Sheet, Path]) -> None:
+    """Writes the sheet: its films' posters, cut into `cuts`, in a grid SHEET_COLS across, in the sheet's order."""
+    s, cuts = job
+    out = IMG / "wall" / s.name
+    out.parent.mkdir(parents=True, exist_ok=True)
+    cols = min(SHEET_COLS, len(s.films))
+    args = ["magick", "montage", *[f"png:{cuts / str(t)}" for t in s.films], "-tile", f"{cols}x", "-geometry", "+0+0", "-background", "none"]
+    done = subprocess.run([*args, "-quality", str(QUALITY), f"webp:{out}.part"], capture_output=True, text=True, timeout=MAGICK_S)
+    if done.returncode != 0:
+        raise SystemExit(f"the sheet {s.name} could not be made: {done.stderr.strip()[:200]}")
+    Path(f"{out}.part").replace(out)
+
+
+def pictures(on_disk: dict[int, Folder], sheets: dict[str, Sheet], revealed: set[int]) -> int:
+    """Every picture the demo shows: each revealed film's poster and backdrop, made afresh where the widths or the
+    quality have changed since the last build, and every sheet, made afresh each build."""
+    made_with = {"quality": QUALITY, "poster": POSTER_WIDTHS, "backdrop": BACKDROP_WIDTHS, "sheet": SHEET_WIDTH}
     fresh = not STAMP.exists() or json.loads(STAMP.read_text()) != made_with
-    jobs = [(on_disk[t].poster, IMG / "poster" / str(t), POSTER_WIDTHS, fresh) for t in sorted(posters)]
-    jobs += [(on_disk[t].backdrop, IMG / "backdrop" / str(t), BACKDROP_WIDTHS, fresh) for t in sorted(backdrops)]
-    with ThreadPoolExecutor(6) as pool:
+    jobs = [(on_disk[t].poster, IMG / "poster" / str(t), POSTER_WIDTHS, fresh) for t in sorted(revealed)]
+    jobs += [(on_disk[t].backdrop, IMG / "backdrop" / str(t), BACKDROP_WIDTHS, fresh) for t in sorted(revealed)]
+    with tempfile.TemporaryDirectory() as tmp, ThreadPoolExecutor(6) as pool:
         made = sum(pool.map(convert, jobs))
+        cuts = Path(tmp)
+        list(pool.map(cut_poster, [(on_disk[t].poster, cuts / str(t)) for t in sorted({t for s in sheets.values() for t in s.films})]))
+        list(pool.map(sheet, [(s, cuts) for s in sheets.values()]))
     STAMP.write_text(json.dumps(made_with) + "\n")
-    print(f"pictures written: {made}")
+    print(f"pictures written: {made}; sheets: {len(sheets)}")
     return made
 
 
@@ -497,22 +557,26 @@ def main() -> int:
         labelled = {tree: frozenset(labels.of(tree).kinds) for tree in DOORS if tree not in RULED}
         reveal = choose_all(rec, plan, Revealable(fit, has_backdrop, films, labelled))
         revealed = {t for films_ in reveal.values() for t in films_}
-        cards = {t: card(c, t) for t in revealed}
+        cards = {t: card(c, t, name.split("/")[0]) for name, films_ in reveal.items() for t in films_}
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
-    files = canned_files(rec, fit, reveal, cards)
+    sheets = sheets_of(rec, fit)
+    files = canned_files(rec, sheets, fit, reveal, cards)
     found = leaks(files, [str(d) for d in dirs] + [str(table), "{tmdb-", "library.invalid"])
     if found:
         raise SystemExit("; ".join(found))
     # The new pictures first: they only add. Then the canned files swap in whole, then the film list, and only
     # then do the pictures of films no longer shown go. A failure at any step leaves the last good set standing.
-    pictures(on_disk, fit, revealed)
+    pictures(on_disk, sheets, revealed)
     write_canned(files)
     plan_text = json.dumps({"exclude": sorted(exclude), "reveal": reveal}, indent=2) + "\n"
     FILMS_FILE.with_suffix(".part").write_text(plan_text)
     FILMS_FILE.with_suffix(".part").replace(FILMS_FILE)
-    gone = prune(IMG / "poster", fit) + prune(IMG / "backdrop", revealed)
+    gone = prune(IMG / "poster", revealed) + prune(IMG / "backdrop", revealed)
+    for f in (IMG / "wall").iterdir():
+        if f.name not in sheets:
+            f.unlink()
     print(f"films' pictures removed: {gone}")
     print(f"films shown: {len(shown)}; with a real poster: {len(fit)}; revealed: {len(revealed)}")
     return 0
