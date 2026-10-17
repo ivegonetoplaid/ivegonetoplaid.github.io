@@ -162,7 +162,7 @@ test("the corner mark inside the demo starts over in place and never loads the s
   await context.close();
 });
 
-test("the demo fetches every canned file the site carries, and no other", async () => {
+test("the demo fetches every canned file the site carries, and no other, and asks for them again on a reload", async () => {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" });
   const page = await context.newPage();
   const fetched = new Set();
@@ -174,6 +174,11 @@ test("the demo fetches every canned file the site carries, and no other", async 
   await atDoors(page);
   const carried = ["boot.json", "first.json", "picks.json", ...readdirSync(`${ROOT}canned/walk`).map((f) => `walk/${f}`)];
   assert.deepEqual([...fetched].sort(), carried.sort());
+  // A kept copy from before a deploy would not match the player the deploy brought, so a reload asks the site again.
+  const before = site.hits.get("/canned/first.json");
+  await page.reload();
+  await atDoors(page);
+  assert.equal(site.hits.get("/canned/first.json"), before + 1, "a reload took first.json from a kept copy without asking the site");
   await context.close();
 });
 

@@ -41,8 +41,10 @@ let resting = null; // the pick at rest: { frame, film, link, openers, open } wh
 
 // ---------- the canned files ----------
 
+// Asked of the site each time, never taken from a kept copy unasked: GitHub Pages lets a browser keep a file 10
+// minutes, and a kept reply from before a deploy would not match the player that deploy brought.
 async function canned(name) {
-  const res = await fetch(`/canned/${name}`);
+  const res = await fetch(`/canned/${name}`, { cache: "no-cache" });
   if (!res.ok) throw new Error(`/canned/${name} answered ${res.status}`);
   return res.json();
 }
