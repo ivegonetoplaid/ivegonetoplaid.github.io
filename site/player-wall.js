@@ -1,12 +1,14 @@
-// The demo's poster wall: Matinee's wall as the demo plays it. The posters of the films still in the running
-// drift upward in a repeating grid, laid out by Matinee's own grid rules, and a pick hunts across them to the
-// picked film with Matinee's own hop easing. The hunt is on rails: its hops and their times come from a seed
-// alone, never from the screen's size, so two screens that start a hunt together land together.
+// The demo's poster wall: Matinee's wall as the demo plays it. A sample of the films still in the running drifts
+// upward in a repeating grid, laid out by Matinee's own grid rules at the size the whole pool would give, and a pick
+// hunts across them to the picked film with Matinee's own hop easing. Every poster on a wall is a slice of one
+// picture, the wall's sheet, fetched before the demo shows, so no poster waits for its picture. The hunt is on
+// rails: its hops and their times come from a seed alone, never from the screen's size, so two screens that start a
+// hunt together land together.
 
 import { isPhone, prefersLessMotion } from "/static/js/dom.js";
 import { GOLD, posterGlow } from "/static/js/glow.js";
 import { HOP_TABLE, SETTLE_EASE, SETTLE_S, bezier, centreOf, hopCell, settledCamera } from "/static/js/hunt-plan.js";
-import { camCell, cellBox, filmIndex, pictureSize, posterAcross, screenCells, wallLayout } from "/static/js/wall-grid.js";
+import { camCell, cellBox, filmIndex, posterAcross, screenCells, wallLayout } from "/static/js/wall-grid.js";
 
 const DRIFT_PX_S = 10; // upward, as Matinee's wall drifts
 const AWAY = 0.34; // the layer's strength once a pick has landed: the posters fall from 35 to 12 per cent
@@ -18,7 +20,24 @@ const FIRST_ACROSS = 0.6; // the first hop runs across more often than down
 const VERTICAL_SCALE = 0.7; // rows are taller than columns are wide
 const GLOW = { blur: 0.25, spread: 0.033, alpha: 0.35 }; // the glow, as shares of the grown poster's width
 
-export const posterUrl = (id, size) => `/img/poster/${id}/${size}`;
+export const posterUrl = (id) => `/img/poster/${id}/l`;
+
+// Fetches every wall's sheet now, so each is at hand before its screen; resolves once `first` can be drawn, so the
+// demo never shows a wall still arriving. Only the first is decoded here: a browser may refuse to hold many
+// pictures decoded at once, and a fetched sheet decodes in moments when its wall shows.
+const fetching = []; // the sheets' pictures, held until their fetch ends
+export function fetchSheets(walls, first) {
+  for (const sheet of new Set(walls.map((w) => w.sheet))) {
+    if (sheet === first.sheet) continue;
+    const img = new Image();
+    img.onerror = () => console.warn("a wall's sheet did not load", sheet);
+    img.src = sheet;
+    fetching.push(img);
+  }
+  const img = new Image();
+  img.src = first.sheet;
+  return img.decode().catch((err) => console.warn("the first wall's sheet did not load", err));
+}
 
 // A draw of numbers from 0 to 1 that depends on `seed` alone, the same in every screen.
 export function sequence(seed) {
@@ -81,14 +100,12 @@ export function huntPlan(seed, layout, from) {
   return { hops, landing: cell };
 }
 
-// The order a pool's films stand in: by a number drawn from each film's id, the same in every screen.
-const ordered = (pool) => [...pool].sort((a, b) => seedOf(String(a)) - seedOf(String(b)) || a - b);
-
 export class DemoWall {
   constructor(root) {
     this.root = root;
     this.layer = null;
     this.layout = null;
+    this.sheet = null; // the wall showing: its sheet, the films on it in order, and the pool it stands for
     this.order = [];
     this.resting = false;
     this.tiles = new Map(); // "i,j" -> the tile drawn in that cell
@@ -103,31 +120,31 @@ export class DemoWall {
     requestAnimationFrame((now) => this.frame(now));
   }
 
-  // Lays the wall out for `pool`; `resting` sets the posters to the size they keep through a pick, as Matinee's
-  // wall does once the last question is answered. A new pool fades in over the old one; the same pool at the
-  // same size changes nothing.
-  show(pool, { resting = false } = {}) {
-    const order = ordered(pool);
-    const same = order.length === this.order.length && order.every((t, k) => t === this.order[k]);
-    if (this.layer && same && resting === this.resting) return;
-    this.order = order;
+  // Lays out `wall` (a canned screen's wall: its sheet, its films in the sheet's order and the pool's size);
+  // `resting` sets the posters to the size they keep through a pick, as Matinee's wall does once the last question
+  // is answered. A new wall fades in over the old one; the same wall at the same size changes nothing.
+  show(wall, { resting = false } = {}) {
+    if (this.layer && this.sheet?.sheet === wall.sheet && resting === this.resting) return;
+    this.sheet = wall;
+    this.order = wall.films;
     this.resting = resting;
     this.placed = new Map();
     const old = this.layer;
     this.layer = document.createElement("div");
-    this.layer.className = "wall-tiles";
+    this.layer.className = old ? "wall-tiles waiting" : "wall-tiles";
     this.tiles = new Map();
     this.root.append(this.layer);
     this.relay();
+    this.draw();
     if (old) {
-      old.style.opacity = "0";
+      requestAnimationFrame(() => requestAnimationFrame(() => this.layer?.classList.remove("waiting")));
       setTimeout(() => old.remove(), 450);
     }
   }
 
   relay() {
     const phone = isPhone();
-    this.layout = wallLayout(innerWidth, innerHeight, posterAcross(this.order.length, phone, this.resting), phone, this.order.length);
+    this.layout = wallLayout(innerWidth, innerHeight, posterAcross(this.sheet.count, phone, this.resting), phone, this.order.length);
   }
 
   frame(now) {
@@ -139,20 +156,15 @@ export class DemoWall {
     requestAnimationFrame((t) => this.frame(t));
   }
 
-  filmAt(i, j) {
-    return this.placed.get(`${i},${j}`) ?? this.order[filmIndex(this.layout, i, j)];
-  }
-
   draw() {
     const L = this.layout;
     if (!L || !this.layer) return;
     this.layer.style.transform = `translate3d(${L.vw / 2 - this.cam.x}px, ${L.vh / 2 - this.cam.y}px, 0)`;
-    const size = pictureSize(L.w, devicePixelRatio || 1);
     const seen = new Set();
     for (const { i, j } of screenCells(L, this.cam)) {
       const key = `${i},${j}`;
       seen.add(key);
-      this.place(this.tileAt(key), i, j, size);
+      this.place(this.tileAt(key), i, j);
     }
     for (const [key, img] of this.tiles) {
       if (seen.has(key)) continue;
@@ -163,27 +175,34 @@ export class DemoWall {
 
   // The tile drawn in cell `key`, made when the cell first comes on screen.
   tileAt(key) {
-    let img = this.tiles.get(key);
-    if (!img) {
-      img = document.createElement("img");
-      img.className = "tile";
-      img.alt = "";
-      img.decoding = "async";
-      this.tiles.set(key, img);
-      this.layer.append(img);
+    let tile = this.tiles.get(key);
+    if (!tile) {
+      tile = document.createElement("div");
+      tile.className = "tile";
+      this.tiles.set(key, tile);
+      this.layer.append(tile);
     }
-    return img;
+    return tile;
   }
 
-  // Draws `img` in cell i, j: its film's poster at `size`, hidden while the grown poster stands in for it.
-  place(img, i, j, size) {
+  // Draws `tile` in cell i, j: its film's slice of the sheet, or, for the film a hunt put there, that film's own
+  // poster; hidden while the grown poster stands in for it.
+  place(tile, i, j) {
     const L = this.layout;
-    const src = posterUrl(this.filmAt(i, j), size);
-    if (img.dataset.src !== src) img.src = img.dataset.src = src;
-    img.style.width = `${L.w}px`;
-    img.style.height = `${L.h}px`;
-    img.style.transform = `translate(${i * L.sx}px, ${j * L.sy}px)`;
-    img.style.visibility = this.front && `${i},${j}` === this.landing ? "hidden" : "";
+    const placed = this.placed.get(`${i},${j}`);
+    const { sheet, cols } = this.sheet;
+    const k = placed ? -1 : filmIndex(L, i, j);
+    const look = placed
+      ? `url("${posterUrl(placed)}") center / cover`
+      : `url("${sheet}") ${-(k % cols) * L.w}px ${-Math.floor(k / cols) * L.h}px / ${cols * L.w}px auto`;
+    if (tile.dataset.look !== look) {
+      tile.style.background = look;
+      tile.dataset.look = look;
+    }
+    tile.style.width = `${L.w}px`;
+    tile.style.height = `${L.h}px`;
+    tile.style.transform = `translate(${i * L.sx}px, ${j * L.sy}px)`;
+    tile.style.visibility = this.front && `${i},${j}` === this.landing ? "hidden" : "";
   }
 
   aim(cell) {
@@ -232,7 +251,7 @@ export class DemoWall {
     const img = document.createElement("img");
     img.className = "tile";
     img.alt = "";
-    img.src = posterUrl(id, "l");
+    img.src = posterUrl(id);
     Object.assign(img.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px`, opacity: "1" });
     img.style.transformOrigin = "50% 50%";
     this.front = img;
