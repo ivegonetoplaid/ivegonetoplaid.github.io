@@ -33,10 +33,13 @@ test("every copied file is as Matinee's commit has it", () => {
 });
 
 const checkout = process.env.MATINEE_CHECKOUT || join(ROOT, "../matinee");
+// git's own settings name the repository a commit hook runs for (a linked worktree's hook is given GIT_DIR), and
+// would point `git -C` there instead of at the Matinee checkout; the checkout is read with none of them.
+const outsideGit = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith("GIT_")));
 test("the checksums are those of the recorded Matinee commit", { skip: !existsSync(join(checkout, ".git")) && "no Matinee checkout" }, () => {
   for (const [file, hash] of listed) {
     const inRepo = file.slice("static/".length);
-    const bytes = execFileSync("git", ["-C", checkout, "show", `${commit}:src/matinee/web/static/${inRepo}`], { maxBuffer: 1 << 26 });
+    const bytes = execFileSync("git", ["-C", checkout, "show", `${commit}:src/matinee/web/static/${inRepo}`], { maxBuffer: 1 << 26, env: outsideGit });
     assert.equal(sha(bytes), hash, file);
   }
 });
